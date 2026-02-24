@@ -41,9 +41,11 @@ export default function TicketChat() {
 
   const ticket = PLACEHOLDER.find((p) => p.id === id) || {
     id,
-    category: "-",
-    date: "-",
+    summary: "-",
+    description: "-",
     status: "Open",
+    assignee: "Support Team",
+    updated: "-",
   };
 
   useEffect(() => {
@@ -88,7 +90,7 @@ export default function TicketChat() {
           <div className="assignee">
             <div className="avatar">A</div>
             <div>
-              <div className="assignee-name">Assignee</div>
+              <div className="assignee-name">{ticket.assignee}</div>
               <div className="assignee-email">assignee@email.com</div>
             </div>
           </div>
@@ -101,16 +103,20 @@ export default function TicketChat() {
               <div>No. {ticket.id}</div>
             </div>
             <div className="details-col">
-              <strong>Category</strong>
-              <div>{ticket.category}</div>
+              <strong>Summary</strong>
+              <div>{ticket.summary}</div>
             </div>
             <div className="details-col">
-              <strong>Date</strong>
-              <div>{ticket.date}</div>
+              <strong>Description</strong>
+              <div>{ticket.description}</div>
             </div>
             <div className="details-col">
-              <strong>Status</strong>
-              <div>{ticket.status}</div>
+              <strong>Assignee</strong>
+              <div>{ticket.assignee}</div>
+            </div>
+            <div className="details-col">
+              <strong>Updated</strong>
+              <div>{ticket.updated}</div>
             </div>
           </div>
         </div>
