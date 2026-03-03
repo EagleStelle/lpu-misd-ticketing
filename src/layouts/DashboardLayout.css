@@ -4,13 +4,23 @@
 }
 
 .content {
-  margin-left: 350px;
-  width: calc(100% - 350px);
+  margin-left: 80px; /* collapsed sidebar width */
+  width: calc(100% - 80px);
   padding: 24px;
   flex: 1;
+  transition: margin-left 0.3s, width 0.3s;
 }
 
-.dashboard.side-panel.collapsed ~ .content {
-  margin-left: 72px;
-  width: calc(100% - 72px);
+.dashboard:has(.side-panel:not(.collapsed)) .content {
+  margin-left: 280px;
+  width: calc(100% - 280px);
+}
+
+@media (max-width: 767px) {
+  .content {  
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 16px;
+    padding-bottom: calc(150px + env(safe-area-inset-bottom));
+  }
 }

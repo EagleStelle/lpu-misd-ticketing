@@ -31,8 +31,10 @@ function SubmitTicket() {
         <h1>Submit Ticket</h1>
         <p>
           Simply create a ticket below. A technician will respond promptly to
-          your issue. You may also send tickets directly to
-          help@lpul-mis.on.spiceworks.com
+          your issue. You may also send tickets directly to &nbsp;
+          <a href="mailto:help@lpul-mis.on.spiceworks.com">
+            help@lpul-mis.on.spiceworks.com
+          </a>
         </p>
 
         <hr className="divider" />
@@ -45,7 +47,7 @@ function SubmitTicket() {
               onChange={handleChange}
               required
             ></textarea>
-            <label>Summary(Required)</label>
+            <label>Summary (Required)</label>
           </div>
 
           <div className="input-label">
@@ -56,7 +58,7 @@ function SubmitTicket() {
               onChange={handleChange}
               required
             ></textarea>
-            <label>Description(Required)</label>
+            <label>Description (Required)</label>
           </div>
 
           <div className="input-label">
@@ -71,7 +73,7 @@ function SubmitTicket() {
               <option value="FACULTY">FACULTY</option>
               <option value="ADMIN">ADMIN</option>
             </select>
-            <label>Type(Required)</label>
+            <label>Type (Required)</label>
           </div>
 
           <div className="input-label">
@@ -89,7 +91,7 @@ function SubmitTicket() {
               <option value="LPU-SC">LPU-SC</option>
               <option value="HIGHSCHOOL">HIGHSCHOOL</option>
             </select>
-            <label>Department(Required)</label>
+            <label>Department (Required)</label>
           </div>
 
           <div className="input-label">
@@ -104,7 +106,7 @@ function SubmitTicket() {
               <option value="Support 2">Support 2</option>
               <option value="Support 3">Support 3</option>
             </select>
-            <label>Assignee(Required)</label>
+            <label>Assignee (Required)</label>
           </div>
 
           <div className="input-label">
@@ -123,7 +125,7 @@ function SubmitTicket() {
               <option value="SOFTWARE">SOFTWARE</option>
               <option value="OTHERS">OTHERS</option>
             </select>
-            <label>Category(Required)</label>
+            <label>Category (Required)</label>
           </div>
 
           <div className="input-label">
@@ -137,18 +139,18 @@ function SubmitTicket() {
               <option value="Onsite">Onsite</option>
               <option value="Online">Online</option>
             </select>
-            <label>Site(Required)</label>
+            <label>Site (Required)</label>
+          </div>
+          <div className="button-group">
+            <button type="button" className="add-photo-btn">
+              <Paperclip size={18} />
+              Attach Files
+            </button>
+            <button type="submit" className="submit-btn">
+              Submit
+            </button>
           </div>
         </form>
-        <div className="button-group">
-          <button type="button" className="add-photo-btn">
-            <Paperclip size={18} />
-            Attach Files
-          </button>
-          <button type="submit" className="submit-btn">
-            Submit
-          </button>
-        </div>
       </div>
     </div>
   );
