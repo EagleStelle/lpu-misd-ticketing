@@ -1,6 +1,7 @@
 import "./tickets.css";
 import { useNavigate } from "react-router-dom";
 import { useState } from "react";
+import { Search } from "lucide-react";
 
 export const PLACEHOLDER = [
   {
@@ -43,42 +44,47 @@ function Tickets() {
             <option>Closed Tickets</option>
           </select>
 
-          <input
-            type="text"
-            placeholder="🔍︎ Search..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          <div className="search-box">
+            <Search size={20} />
+            <input
+              type="text"
+              placeholder="Search..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+          </div>
         </div>
 
         {/* Table */}
-        <table className="tickets-table" aria-label="tickets table">
-          <thead>
-            <tr>
-              <th>Ticket No.</th>
-              <th>Summary</th>
-              <th>Description</th>
-              <th>Assignee</th>
-              <th>Updated</th>
-            </tr>
-          </thead>
-          <tbody>
-            {PLACEHOLDER.map((t, index) => (
-              <tr
-                key={t.id}
-                className="clickable-row"
-                style={{ "--i": index }}
-                onClick={() => navigate(`/Tickets/${t.id}`)}
-              >
-                <td>No. {t.id}</td>
-                <td>{t.summary}</td>
-                <td>{t.description}</td>
-                <td>{t.assignee}</td>
-                <td>{t.updated}</td>
+        <div className="table-wrapper">
+          <table className="tickets-table" aria-label="tickets table">
+            <thead>
+              <tr>
+                <th>Ticket No.</th>
+                <th>Summary</th>
+                <th>Description</th>
+                <th>Assignee</th>
+                <th>Updated</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {PLACEHOLDER.map((t, index) => (
+                <tr
+                  key={t.id}
+                  className="clickable-row"
+                  style={{ "--i": index }}
+                  onClick={() => navigate(`/Tickets/${t.id}`)}
+                >
+                  <td>No. {t.id}</td>
+                  <td>{t.summary}</td>
+                  <td>{t.description}</td>
+                  <td>{t.assignee}</td>
+                  <td>{t.updated}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
