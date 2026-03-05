@@ -2,7 +2,7 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { supabase } from "../config/database.js";
 
-const JWT_SECRET = process.env.JWT_SECRET || "your_secret_key";
+const JWT_SECRET = process.env.JWT_SECRET || "ce094a2c68ed110a661cdaf38985f808c606027df6416b8f80c56f2c47a9d4d64cd27b7589d33e89158f7b94e322d43ef6527c9dd62312ebd1e460134000fecd";
 
 /**
  * Hash password

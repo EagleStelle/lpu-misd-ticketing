@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Paperclip } from "lucide-react";
+import { jwtDecode } from "jwt-decode";
 import { supabase } from "../../Supabaseclient";
 
 function SubmitTicket() {
@@ -31,7 +32,16 @@ function SubmitTicket() {
     setSuccessMessage(null);
 
     try {
-      const userId = localStorage.getItem("userId");
+      // Get user ID from JWT token instead of localStorage
+      const token = localStorage.getItem("authToken");
+      if (!token) {
+        setErrorMessage("You must be logged in to submit a ticket.");
+        return;
+      }
+
+      const decoded = jwtDecode(token);
+      const userId = decoded.id;
+
       const { data, error } = await supabase
         .from("Tickets")
         .insert([
@@ -42,17 +52,18 @@ function SubmitTicket() {
             Department: formData.department,
             Category: formData.category,
             Site: formData.site,
-            created_by: userId || null,
+            created_by: userId,
           },
-        ])
-        .select();
+        ]);
 
       if (error) {
         console.error("Error submitting ticket:", error);
         setErrorMessage(error.message || "Failed to submit ticket");
       } else {
         console.log("Ticket submitted successfully:", data);
-        setSuccessMessage("Ticket submitted successfully! Your ticket has been created.");
+        setSuccessMessage(
+          "Ticket submitted successfully! Your ticket has been created.",
+        );
         setTimeout(() => setSuccessMessage(null), 5000);
 
         setFormData({
@@ -87,26 +98,30 @@ function SubmitTicket() {
 
         <hr className="divider" />
         {errorMessage && (
-          <div style={{
-            backgroundColor: "#ffebee",
-            color: "#d32f2f",
-            padding: "12px 16px",
-            borderRadius: "4px",
-            marginBottom: "16px",
-            border: "1px solid #ef5350"
-          }}>
+          <div
+            style={{
+              backgroundColor: "#ffebee",
+              color: "#d32f2f",
+              padding: "12px 16px",
+              borderRadius: "4px",
+              marginBottom: "16px",
+              border: "1px solid #ef5350",
+            }}
+          >
             <strong>Error:</strong> {errorMessage}
           </div>
         )}
         {successMessage && (
-          <div style={{
-            backgroundColor: "#e8f5e9",
-            color: "#2e7d32",
-            padding: "12px 16px",
-            borderRadius: "4px",
-            marginBottom: "16px",
-            border: "1px solid #66bb6a"
-          }}>
+          <div
+            style={{
+              backgroundColor: "#e8f5e9",
+              color: "#2e7d32",
+              padding: "12px 16px",
+              borderRadius: "4px",
+              marginBottom: "16px",
+              border: "1px solid #66bb6a",
+            }}
+          >
             <strong>Success:</strong> {successMessage}
           </div>
         )}
@@ -199,7 +214,11 @@ function SubmitTicket() {
             <label>Site (Required)</label>
           </div>
           <div className="button-group">
-            <button type="button" className="add-photo-btn" disabled={isLoading}>
+            <button
+              type="button"
+              className="add-photo-btn"
+              disabled={isLoading}
+            >
               <Paperclip size={18} />
               Attach Files
             </button>
