@@ -5,36 +5,13 @@ import "./ticketchat.css";
 import { supabase } from "../../supabaseClient";
 import { useLoading } from "../../context/LoadingContext";
 import { Send, ArrowLeft, Download, Image as ImageIcon, X } from "lucide-react";
-
-function loadMessages(ticketId) {
-  const key = `ticket_chat_${ticketId}`;
-  const raw = localStorage.getItem(key);
-  if (raw) return JSON.parse(raw);
-  return [
-    {
-      id: Date.now() - 60000,
-      sender: "assignee",
-      text: "Hello, we received your ticket.",
-      time: new Date().toISOString(),
-    },
-    {
-      id: Date.now() - 30000,
-      sender: "user",
-      text: "Thanks, any update?",
-      time: new Date().toISOString(),
-    },
-  ];
-}
-
-function saveMessages(ticketId, msgs) {
-  localStorage.setItem(`ticket_chat_${ticketId}`, JSON.stringify(msgs));
-}
+import { realtimeSupabase } from "../../realtimeSupabaseClient";
 
 export default function TicketChat({ adminView = false } = {}) {
   const { id } = useParams();
   const navigate = useNavigate();
   const { showLoading, hideLoading } = useLoading();
-  const [messages, setMessages] = useState(() => loadMessages(id));
+  const [messages, setMessages] = useState([]);
   const [text, setText] = useState("");
   const [ticket, setTicket] = useState(null);
   const [error, setError] = useState(null);
@@ -42,6 +19,9 @@ export default function TicketChat({ adminView = false } = {}) {
   const [expandedSummary, setExpandedSummary] = useState(false);
   const [expandedDescription, setExpandedDescription] = useState(false);
   const scrollRef = useRef(null);
+  const userIdRef = useRef(null);
+  const seenMessageIdsRef = useRef(new Set());
+  const [viewerId, setViewerId] = useState(null);
   // Fetch ticket from Supabase
   useEffect(() => {
     const fetchTicket = async () => {
@@ -59,6 +39,8 @@ export default function TicketChat({ adminView = false } = {}) {
 
         const decoded = jwtDecode(token);
         const userId = decoded.id;
+        userIdRef.current = userId;
+        setViewerId(userId);
 
         // Fetch ticket (user: verify ownership; admin: can view any ticket)
         let q = supabase.from("Tickets").select("*").eq("id", id);
@@ -90,8 +72,86 @@ export default function TicketChat({ adminView = false } = {}) {
     };
 
     fetchTicket();
-    setMessages(loadMessages(id));
   }, [id, adminView, showLoading, hideLoading]);
+
+  // Load existing messages + subscribe to realtime updates
+  useEffect(() => {
+    const ticketId = Number(id);
+    if (!ticketId || Number.isNaN(ticketId)) return;
+
+    let isCancelled = false;
+
+    const loadMessages = async () => {
+      try {
+        const { data, error } = await supabase
+          .from("ticket_messages")
+          .select("*")
+          .eq("ticket_id", ticketId)
+          .order("created_at", { ascending: true });
+
+        if (error) {
+          console.error("Error loading messages:", error);
+          return;
+        }
+
+        if (isCancelled) return;
+
+        const mapped = (data || []).map((row) => {
+          seenMessageIdsRef.current.add(row.id);
+          return {
+            id: row.id,
+            senderId: row.sender_id,
+            senderRole: row.sender_role,
+            text: row.message_text,
+            time: row.created_at,
+          };
+        });
+
+        setMessages(mapped);
+      } catch (err) {
+        console.error("Unexpected error loading messages:", err);
+      }
+    };
+
+    loadMessages();
+
+    const channel = realtimeSupabase
+      .channel(`ticket_messages_${ticketId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "ticket_messages",
+          filter: `ticket_id=eq.${ticketId}`,
+        },
+        (payload) => {
+          const row = payload.new;
+          if (!row || seenMessageIdsRef.current.has(row.id)) return;
+          seenMessageIdsRef.current.add(row.id);
+          setMessages((prev) => [
+            ...prev,
+            {
+              id: row.id,
+              senderId: row.sender_id,
+              senderRole: row.sender_role,
+              text: row.message_text,
+              time: row.created_at,
+            },
+          ]);
+        },
+      )
+      .subscribe((status) => {
+        if (status === "CHANNEL_ERROR") {
+          console.error("Realtime channel error for ticket_messages");
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+      realtimeSupabase.removeChannel(channel);
+    };
+  }, [id]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -99,29 +159,82 @@ export default function TicketChat({ adminView = false } = {}) {
     }
   }, [messages]);
 
-  function handleSend() {
-    if (!text.trim()) return;
-    const m = {
-      id: Date.now(),
-      sender: "user",
-      text: text.trim(),
-      time: new Date().toISOString(),
-    };
-    const next = [...messages, m];
-    setMessages(next);
-    saveMessages(id, next);
+  async function handleSend() {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+
+    const senderId = userIdRef.current;
+    if (!senderId) {
+      console.warn("Missing sender ID, cannot send message");
+      alert("Session error: please log in again and retry.");
+      return;
+    }
+
     setText("");
-    setTimeout(() => {
-      const reply = {
-        id: Date.now() + 1,
-        sender: "assignee",
-        text: "Thanks for the message — we'll check it.",
-        time: new Date().toISOString(),
-      };
-      const updated = [...next, reply];
-      setMessages(updated);
-      saveMessages(id, updated);
-    }, 800);
+
+    // Optimistic UI: show the message immediately
+    const tempId =
+      (typeof crypto !== "undefined" && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : `temp-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+
+    const optimisticMessage = {
+      id: tempId,
+      senderId,
+      senderRole: adminView ? "admin" : "user",
+      text: trimmed,
+      time: new Date().toISOString(),
+      pending: true,
+    };
+
+    setMessages((prev) => [...prev, optimisticMessage]);
+
+    try {
+      const { data, error } = await supabase
+        .from("ticket_messages")
+        .insert([
+          {
+            ticket_id: Number(id),
+            sender_id: senderId,
+            sender_role: adminView ? "admin" : "user",
+            message_text: trimmed,
+          },
+        ]);
+
+      if (error) {
+        console.error("Error sending message:", error);
+        alert(error.message || "Failed to send message");
+        // Revert text so user can retry
+        setText(trimmed);
+        // Remove optimistic message on error
+        setMessages((prev) => prev.filter((m) => m.id !== tempId));
+        return;
+      }
+
+      if (data && data[0]) {
+        const row = data[0];
+        if (!seenMessageIdsRef.current.has(row.id)) {
+          seenMessageIdsRef.current.add(row.id);
+          // Replace optimistic message with server-confirmed message
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.id === tempId
+                ? {
+                    id: row.id,
+                    senderId: row.sender_id,
+                    senderRole: row.sender_role,
+                    text: row.message_text,
+                    time: row.created_at,
+                  }
+                : m,
+            ),
+          );
+        }
+      }
+    } catch (err) {
+      console.error("Unexpected error sending message:", err);
+      setText(trimmed);
+    }
   }
 
   const downloadAttachment = (attachment) => {
@@ -333,9 +446,12 @@ export default function TicketChat({ adminView = false } = {}) {
 
         <div className="chat-messages" ref={scrollRef} aria-live="polite">
           {messages.map((m) => (
+            // Messenger-like alignment: YOUR messages on the right, others on the left
             <div
               key={m.id}
-              className={`msg ${m.sender === "user" ? "msg-right" : "msg-left"}`}
+              className={`msg ${
+                viewerId && m.senderId === viewerId ? "msg-right" : "msg-left"
+              }`}
             >
               <div className="bubble">{m.text}</div>
             </div>

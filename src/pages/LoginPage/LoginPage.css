@@ -83,8 +83,14 @@ form {
     margin-top: 4px;
 }
 
+.password-input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
 .login-input {
     padding: 14px 18px;
+    padding-right: 48px;
     width: 100%;
     border: 1px solid rgba(255, 255, 255, 0.75);
     border-radius: 10px;
@@ -94,6 +100,31 @@ form {
     color: #ffffff;
     outline: none;
     transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.password-toggle-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    color: rgba(255, 255, 255, 0.7);
+    padding: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.2s ease;
+}
+
+.password-toggle-btn:hover {
+    color: rgba(255, 255, 255, 0.95);
+}
+
+.password-toggle-btn:focus {
+    outline: none;
+    color: rgba(255, 255, 255, 0.95);
 }
 
 .login-input::placeholder {

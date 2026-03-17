@@ -84,6 +84,9 @@ export default function AdminTickets() {
     }
   };
 
+  // Mock assignee options for now (no real names yet)
+  const mockAssignees = ["Assignee 1", "Assignee 2", "Assignee 3"];
+
   useEffect(() => {
     if (!isLoggedIn || !isAdmin) return;
 
@@ -113,6 +116,9 @@ export default function AdminTickets() {
         t?.Summary,
         t?.Description,
         t?.Assignee,
+        t?.Assignee1,
+        t?.Assignee2,
+        t?.Assignee3,
         t?.Type,
         t?.Department,
         t?.Category,
@@ -136,6 +142,38 @@ export default function AdminTickets() {
 
   if (!isLoggedIn) return <Navigate to="/" replace />;
   if (!isAdmin) return <Navigate to="/Tickets" replace />;
+
+  const handleAssigneeChange = async (ticket, slotIndex, value) => {
+    const field = `Assignee${slotIndex}`;
+    const payload = {
+      Assignee1: ticket.Assignee1 || null,
+      Assignee2: ticket.Assignee2 || null,
+      Assignee3: ticket.Assignee3 || null,
+    };
+    payload[field] = value || null;
+
+    try {
+      const { error } = await supabase
+        .from("Tickets")
+        .eq("id", ticket.id)
+        .update(payload);
+
+      if (error) {
+        console.error("Error updating assignees:", error);
+        alert(error.message || "Failed to update assignees");
+        return;
+      }
+
+      const updated = tickets.map((t) =>
+        t.id === ticket.id ? { ...t, ...payload } : t,
+      );
+      setTickets(updated);
+      setAdminTickets(updated);
+    } catch (e) {
+      console.error("Unexpected error updating assignees:", e);
+      alert("Unexpected error updating assignees");
+    }
+  };
 
   return (
     <div className="admin-page">
@@ -204,7 +242,7 @@ export default function AdminTickets() {
                   <th>Ticket No.</th>
                   <th>Summary</th>
                   <th>Description</th>
-                  <th>Assignee</th>
+                  <th>Assignees</th>
                   <th>Type</th>
                   <th>Department</th>
                   <th>Category</th>
@@ -235,7 +273,22 @@ export default function AdminTickets() {
                       <td>No. {t.id}</td>
                       <td>{t.Summary || "-"}</td>
                       <td className="admin-clamp">{t.Description || "-"}</td>
-                      <td>{t.Assignee || "-"}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <select
+                          className="admin-assignee-select"
+                          value={t.Assignee1 || ""}
+                          onChange={(e) =>
+                            handleAssigneeChange(t, 1, e.target.value)
+                          }
+                        >
+                          <option value="">Select assignee</option>
+                          {mockAssignees.map((label) => (
+                            <option key={label} value={label}>
+                              {label}
+                            </option>
+                          ))}
+                        </select>
+                      </td>
                       <td>{t.Type || "-"}</td>
                       <td>{t.Department || "-"}</td>
                       <td>{t.Category || "-"}</td>

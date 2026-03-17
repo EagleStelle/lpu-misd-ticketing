@@ -73,14 +73,21 @@ function restFrom(table) {
         update(obj) { return chain._execUpdate(obj); },
         async _execUpdate(obj) {
             if (!state._filter) return { data: null, error: { message: 'No filter specified for update' } };
-            const url = buildUrl(state._table, state._filter);
+            // state._filter holds something like "&id=eq.123" – convert to proper query
+            let q = state._filter || "";
+            if (q.startsWith("&")) q = q.slice(1);
+            if (!q.startsWith("?")) q = `?${q}`;
+            const url = buildUrl(state._table, q);
             const res = await fetch(url, { method: 'PATCH', headers: defaultHeaders(), body: JSON.stringify(obj) });
             return handleResponse(res).then((data) => ({ data, error: null })).catch((error) => ({ data: null, error }));
         },
         delete() { return chain._execDelete(); },
         async _execDelete() {
             if (!state._filter) return { data: null, error: { message: 'No filter specified for delete' } };
-            const url = buildUrl(state._table, state._filter);
+            let q = state._filter || "";
+            if (q.startsWith("&")) q = q.slice(1);
+            if (!q.startsWith("?")) q = `?${q}`;
+            const url = buildUrl(state._table, q);
             const res = await fetch(url, { method: 'DELETE', headers: defaultHeaders() });
             return handleResponse(res).then((data) => ({ data, error: null })).catch((error) => ({ data: null, error }));
         },
