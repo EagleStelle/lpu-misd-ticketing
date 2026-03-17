@@ -54,6 +54,57 @@ export const initializeDatabase = async () => {
       }
     }
 
+    // Ensure ticket-related tables/columns exist
+    try {
+      await supabase.rpc("execute_sql", {
+        sql: `
+          -- Ticket messages table for chat
+          CREATE TABLE IF NOT EXISTS ticket_messages (
+            id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+            ticket_id INTEGER NOT NULL,
+            sender_id UUID NOT NULL,
+            sender_role TEXT NOT NULL CHECK (sender_role IN ('user', 'admin')),
+            message_text TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT NOW()
+          );
+
+          CREATE INDEX IF NOT EXISTS idx_ticket_messages_ticket_id
+            ON ticket_messages(ticket_id, created_at);
+
+          -- Optional assignee columns on Tickets table (no-op if they already exist)
+          DO $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'Assignee1'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN "Assignee1" TEXT;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'Assignee2'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN "Assignee2" TEXT;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'Assignee3'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN "Assignee3" TEXT;
+            END IF;
+          END
+          $$;
+        `,
+      });
+    } catch (ticketInitError) {
+      console.warn("Ticketing tables/columns initialization skipped:", ticketInitError.message);
+    }
+
     console.log("✓ Database initialized");
   } catch (error) {
     console.error("Database initialization error:", error.message);
