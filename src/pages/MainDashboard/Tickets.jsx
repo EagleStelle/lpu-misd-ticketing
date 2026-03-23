@@ -122,11 +122,23 @@ function Tickets() {
 
         <div className="table-wrapper">
           {(() => {
-            const filteredTickets = tickets.filter(
-              (t) =>
-                String(t.id).toLowerCase().includes(search.toLowerCase()) ||
-                t.Summary?.toLowerCase().includes(search.toLowerCase()),
-            );
+            const isClosed = (t) => {
+              if (!t) return false;
+              if (t.closed_at) return true;
+              const statusValue = t.status || t.Status || t.state || t.State;
+              return String(statusValue || "").toLowerCase().includes("closed");
+            };
+
+            const filteredTickets = tickets
+              .filter((t) => {
+                if (filter === "Open Tickets") return !isClosed(t);
+                return isClosed(t);
+              })
+              .filter(
+                (t) =>
+                  String(t.id).toLowerCase().includes(search.toLowerCase()) ||
+                  t.Summary?.toLowerCase().includes(search.toLowerCase()),
+              );
 
             if (filteredTickets.length === 0) {
               return (
@@ -153,7 +165,8 @@ function Tickets() {
                     <th>Summary</th>
                     <th>Description</th>
                     <th>Department</th>
-                    <th>Updated</th>
+                    <th>Created</th>
+                    <th>Closed</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -172,6 +185,8 @@ function Tickets() {
                         <div className="clamp-text">{t.Description}</div>
                       </td>
                       <td>{t.Department}</td>
+                      <td>{t.created_at ? new Date(t.created_at).toLocaleString() : "-"}</td>
+                      <td>{t.closed_at ? new Date(t.closed_at).toLocaleString() : "-"}</td>
                     </tr>
                   ))}
                 </tbody>

@@ -79,6 +79,7 @@ function SubmitTicket() {
         });
       }
 
+      const now = new Date().toISOString();
       const { data, error } = await supabase.from("Tickets").insert([
         {
           Summary: formData.summary,
@@ -88,6 +89,8 @@ function SubmitTicket() {
           Category: formData.category,
           Site: formData.site,
           created_by: userId,
+          status: "Open",
+          created_at: now,
           attachments:
             attachmentData.length > 0 ? JSON.stringify(attachmentData) : null,
         },

@@ -74,6 +74,28 @@ export const initializeDatabase = async () => {
           -- Optional assignee columns on Tickets table (no-op if they already exist)
           DO $$
           BEGIN
+            -- Ensure Tickets table exists. If not, create with typical fields used by UI.
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.tables
+              WHERE table_name = 'Tickets' AND table_schema = 'public'
+            ) THEN
+              CREATE TABLE "Tickets" (
+                id SERIAL PRIMARY KEY,
+                Summary TEXT,
+                Description TEXT,
+                Type TEXT,
+                Department TEXT,
+                Category TEXT,
+                Site TEXT,
+                created_by UUID,
+                attachments TEXT,
+                status TEXT DEFAULT 'Open',
+                created_at TIMESTAMPTZ DEFAULT NOW(),
+                closed_at TIMESTAMPTZ
+              );
+            END IF;
+
             IF NOT EXISTS (
               SELECT 1
               FROM information_schema.columns
@@ -96,6 +118,30 @@ export const initializeDatabase = async () => {
               WHERE table_name = 'Tickets' AND column_name = 'Assignee3'
             ) THEN
               ALTER TABLE "Tickets" ADD COLUMN "Assignee3" TEXT;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'created_at'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN created_at TIMESTAMPTZ DEFAULT NOW();
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'closed_at'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN closed_at TIMESTAMPTZ;
+            END IF;
+
+            IF NOT EXISTS (
+              SELECT 1
+              FROM information_schema.columns
+              WHERE table_name = 'Tickets' AND column_name = 'status'
+            ) THEN
+              ALTER TABLE "Tickets" ADD COLUMN status TEXT DEFAULT 'Open';
             END IF;
           END
           $$;

@@ -4,7 +4,15 @@ import { jwtDecode } from "jwt-decode";
 import "./ticketchat.css";
 import { supabase } from "../../supabaseClient";
 import { useLoading } from "../../context/LoadingContext";
-import { Send, ArrowLeft, Download, Image as ImageIcon, X } from "lucide-react";
+import {
+  Send,
+  ArrowLeft,
+  Download,
+  Image as ImageIcon,
+  X,
+  ChevronDown,
+  ChevronUp,
+} from "lucide-react";
 import { realtimeSupabase } from "../../realtimeSupabaseClient";
 import { useTicketsCache } from "../../context/TicketsCacheContext";
 
@@ -19,11 +27,73 @@ export default function TicketChat({ adminView = false } = {}) {
   const [error, setError] = useState(null);
   const [selectedImage, setSelectedImage] = useState(null);
   const [expandedSummary, setExpandedSummary] = useState(false);
-  const [expandedDescription, setExpandedDescription] = useState(false);
   const scrollRef = useRef(null);
   const userIdRef = useRef(null);
   const seenMessageIdsRef = useRef(new Set());
   const [viewerId, setViewerId] = useState(null);
+
+  const formatDateTime = (value) => {
+    if (!value) return "-";
+    try {
+      return new Date(value).toLocaleString();
+    } catch {
+      return value;
+    }
+  };
+
+  const isTicketClosed = (ticketData) => {
+    if (!ticketData) return false;
+    if (ticketData.closed_at) return true;
+    const statusValue =
+      ticketData?.status ?? ticketData?.Status ?? ticketData?.state ?? ticketData?.State;
+    return String(statusValue || "").toLowerCase().includes("closed");
+  };
+
+  const handleCloseTicket = async () => {
+    if (!adminView) {
+      alert("Only admins can update ticket status.");
+      return;
+    }
+
+    if (!ticket) return;
+
+    try {
+      showLoading();
+      const now = new Date().toISOString();
+      const nextClosed = !isTicketClosed(ticket);
+      const payload = nextClosed
+        ? { status: "Closed", closed_at: now }
+        : { status: "Open", closed_at: null };
+      const { data, error } = await supabase
+        .from("Tickets")
+        .eq("id", ticket.id)
+        .update(payload);
+
+      if (error) {
+        console.error("Error updating ticket:", error);
+        alert(error.message || "Failed to update ticket status");
+        return;
+      }
+
+      // data may have the updated row in Supabase wrapper response or null
+      const updatedData = Array.isArray(data) && data.length > 0 ? data[0] : null;
+      if (updatedData) {
+        setTicket(updatedData);
+        cacheTicket(id, updatedData);
+      } else {
+        // fallback: update existing ticket object
+        const fallback = { ...ticket, ...payload };
+        setTicket(fallback);
+        cacheTicket(id, fallback);
+      }
+    } catch (err) {
+      console.error("Unexpected error updating ticket:", err);
+      alert("Unexpected error updating ticket status");
+    } finally {
+      hideLoading();
+    }
+  };
+
   // Fetch ticket from Supabase
   useEffect(() => {
     const fetchTicket = async () => {
@@ -242,12 +312,12 @@ export default function TicketChat({ adminView = false } = {}) {
             prev.map((m) =>
               m.id === tempId
                 ? {
-                    id: row.id,
-                    senderId: row.sender_id,
-                    senderRole: row.sender_role,
-                    text: row.message_text,
-                    time: row.created_at,
-                  }
+                  id: row.id,
+                  senderId: row.sender_id,
+                  senderRole: row.sender_role,
+                  text: row.message_text,
+                  time: row.created_at,
+                }
                 : m,
             ),
           );
@@ -318,6 +388,8 @@ export default function TicketChat({ adminView = false } = {}) {
     );
   }
 
+  const attachments = parseAttachments();
+
   return (
     <div className="wrapper">
       <div className="card chat-card">
@@ -335,145 +407,113 @@ export default function TicketChat({ adminView = false } = {}) {
         </div>
 
         <div className="ticket-details">
-          <div className="details-row">
-            <div className="details-col">
+          <div className="details-row details-main-row">
+            <div className="details-col ticket-no-col">
               <strong>Ticket No.</strong>
-              <div>No. {ticket.id}</div>
+              <div className="ticket-no-value">No. {ticket.id}</div>
             </div>
-            <div
-              className={`details-col summary ${expandedSummary ? "expanded" : ""}`}
-              onClick={() => setExpandedSummary(!expandedSummary)}
-              style={{ cursor: "pointer" }}
+
+            <div className="ticket-status-row inline-status">
+              <strong>Status:</strong>
+              <span className="status-pill">{ticket.status || ticket.Status || "Open"}</span>
+              {adminView && (
+                <button
+                  type="button"
+                  onClick={handleCloseTicket}
+                  className="close-ticket-btn"
+                >
+                  {isTicketClosed(ticket) ? "Reopen Ticket" : "Close Ticket"}
+                </button>
+              )}
+            </div>
+
+            <button
+              type="button"
+              className={`details-col summary summary-toggle ${expandedSummary ? "expanded" : ""}`}
+              onClick={() => setExpandedSummary((prev) => !prev)}
+              aria-expanded={expandedSummary}
             >
               <strong>Summary</strong>
-              <div>{ticket.Summary}</div>
-            </div>
-            <div
-              className={`details-col description ${expandedDescription ? "expanded" : ""}`}
-              onClick={() => setExpandedDescription(!expandedDescription)}
-              style={{ cursor: "pointer" }}
-            >
-              <strong>Description</strong>
-              <div>{ticket.Description}</div>
-            </div>
-            <div className="details-col">
-              <strong>Department</strong>
-              <div>{ticket.Department}</div>
-            </div>
-            <div className="details-col">
-              <strong>Type</strong>
-              <div>{ticket.Type}</div>
-            </div>
-            <div className="details-col">
-              <strong>Category</strong>
-              <div>{ticket.Category}</div>
-            </div>
-            <div className="details-col">
-              <strong>Site</strong>
-              <div>{ticket.Site}</div>
-            </div>
+              <div className="summary-preview">{ticket.Summary || "-"}</div>
+              <div className="summary-indicator">
+                {expandedSummary ? "Hide details" : "View details"}
+                {expandedSummary ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+              </div>
+              <div className={`summary-full ${expandedSummary ? "open" : ""}`}>
+                <div className="summary-full-content">{ticket.Description || "No details provided."}</div>
+              </div>
+            </button>
+
+            {attachments.length > 0 && (
+              <div className="attachments-compact inline-attachments">
+                <h4 className="attachments-title">Attachments ({attachments.length})</h4>
+                <div className="attachments-list">
+                  {attachments.map((attachment, index) => (
+                    <div key={index} className="attachment-chip">
+                      {isImageFile(attachment.name) ? (
+                        <img
+                          src={attachment.data}
+                          alt={attachment.name}
+                          className="attachment-thumb"
+                          onClick={() => setSelectedImage(attachment)}
+                          title="Click to view full size"
+                        />
+                      ) : (
+                        <ImageIcon size={22} style={{ color: "#999" }} />
+                      )}
+                      <small className="attachment-name">{attachment.name}</small>
+                      <button
+                        type="button"
+                        onClick={() => downloadAttachment(attachment)}
+                        className="attachment-download-btn"
+                      >
+                        <Download size={10} />
+                        Get
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-
-        {(() => {
-          const attachments = parseAttachments();
-          if (attachments.length === 0) return null;
-
-          return (
-            <div
-              style={{
-                marginTop: "5px",
-                paddingTop: "15px",
-              }}
-            >
-              <h4 style={{ margin: "0 0 10px 0", fontSize: "13px" }}>
-                📎 Attachments ({attachments.length})
-              </h4>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fill, minmax(100px, 1fr))",
-                  gap: "10px",
-                }}
-              >
-                {attachments.map((attachment, index) => (
-                  <div
-                    key={index}
-                    style={{
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      padding: "10px",
-                      backgroundColor: "#f9f9f9",
-                      borderRadius: "4px",
-                      border: "1px solid #ddd",
-                    }}
-                  >
-                    {isImageFile(attachment.name) ? (
-                      <img
-                        src={attachment.data}
-                        alt={attachment.name}
-                        style={{
-                          maxWidth: "70px",
-                          maxHeight: "70px",
-                          objectFit: "cover",
-                          marginBottom: "8px",
-                          borderRadius: "3px",
-                          cursor: "pointer",
-                        }}
-                        onClick={() => setSelectedImage(attachment)}
-                        title="Click to view full size"
-                      />
-                    ) : (
-                      <ImageIcon
-                        size={35}
-                        style={{ marginBottom: "8px", color: "#999" }}
-                      />
-                    )}
-                    <small
-                      style={{
-                        textAlign: "center",
-                        fontSize: "10px",
-                        wordBreak: "break-word",
-                        marginBottom: "6px",
-                      }}
-                    >
-                      {attachment.name}
-                    </small>
-                    <button
-                      type="button"
-                      onClick={() => downloadAttachment(attachment)}
-                      style={{
-                        padding: "3px 6px",
-                        fontSize: "10px",
-                        background: "#2196F3",
-                        color: "white",
-                        border: "none",
-                        borderRadius: "2px",
-                        cursor: "pointer",
-                        display: "flex",
-                        alignItems: "center",
-                        gap: "3px",
-                      }}
-                    >
-                      <Download size={10} />
-                      Get
-                    </button>
-                  </div>
-                ))}
+          <div className={`details-extra ${expandedSummary ? "open" : ""}`}>
+            <div className="details-row details-grid-row">
+              <div className="details-col">
+                <strong>Department</strong>
+                <div>{ticket.Department}</div>
+              </div>
+              <div className="details-col">
+                <strong>Type</strong>
+                <div>{ticket.Type}</div>
+              </div>
+              <div className="details-col">
+                <strong>Category</strong>
+                <div>{ticket.Category}</div>
+              </div>
+              <div className="details-col">
+                <strong>Site</strong>
+                <div>{ticket.Site}</div>
+              </div>
+              <div className="details-col">
+                <strong>Created At</strong>
+                <div>{formatDateTime(ticket.created_at)}</div>
+              </div>
+              <div className="details-col">
+                <strong>Closed At</strong>
+                <div>{formatDateTime(ticket.closed_at)}</div>
               </div>
             </div>
-          );
-        })()}
+          </div>
+
+        </div>
 
         <div className="chat-messages" ref={scrollRef} aria-live="polite">
           {messages.map((m) => (
             // Messenger-like alignment: YOUR messages on the right, others on the left
             <div
               key={m.id}
-              className={`msg ${
-                viewerId && m.senderId === viewerId ? "msg-right" : "msg-left"
-              }`}
+              className={`msg ${viewerId && m.senderId === viewerId ? "msg-right" : "msg-left"
+                }`}
             >
               <div className="bubble">{m.text}</div>
             </div>

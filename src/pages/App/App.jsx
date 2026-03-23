@@ -7,6 +7,7 @@ import DashboardLayout from "../../layouts/DashboardLayout";
 import AdminLayout from "../../layouts/AdminLayout";
 import AdminTickets from "../Admin/AdminTickets";
 import AdminTicketChat from "../Admin/AdminTicketChat";
+import AdminAnalytics from "../Admin/AdminAnalytics";
 import LoadingScreen from "../../components/LoadingScreen";
 import { useLoading } from "../../context/LoadingContext";
 
@@ -39,6 +40,7 @@ function App() {
         >
           <Route path="/admin/tickets" element={<AdminTickets />} />
           <Route path="/admin/tickets/:id" element={<AdminTicketChat />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
         </Route>
 
         <Route
