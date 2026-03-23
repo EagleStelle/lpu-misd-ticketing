@@ -2,6 +2,7 @@
   padding: 24px 28px 40px;
   max-width: 1320px;
   margin: 0 auto;
+  font-family: "Poppins", "Segoe UI", Arial, sans-serif;
 }
 
 .admin-topbar {
@@ -10,6 +11,32 @@
   justify-content: space-between;
   padding-top: 10px;
   gap: 18px;
+}
+
+.admin-nav-links {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.admin-nav-link {
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: #3b3b3b;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+}
+
+.admin-nav-link:hover {
+  background: rgba(140, 0, 1, 0.08);
+}
+
+.admin-nav-link.active {
+  color: #8c0001;
+  border-color: rgba(140, 0, 1, 0.25);
+  background: rgba(140, 0, 1, 0.08);
 }
 
 .admin-brand {
@@ -38,9 +65,9 @@
   align-items: center;
   gap: 10px;
   border: 1px solid rgba(17, 17, 17, 0.12);
-  border-radius: 12px;
-  padding: 12px 14px;
-  width: 360px;
+  border-radius: 16px;
+  padding: 10px 12px;
+  width: 300px;
   background: rgba(255, 255, 255, 0.92);
   box-shadow: 0 6px 20px rgba(15, 23, 42, 0.06);
 }
@@ -114,6 +141,7 @@
   align-items: center;
   gap: 16px;
   margin-bottom: 12px;
+  justify-content: space-between;
 }
 
 .admin-filter select {
@@ -121,12 +149,17 @@
   border: 1px solid rgba(17, 17, 17, 0.12);
   background: #ffffff;
   border-radius: 999px;
-  padding: 12px 16px;
+  padding: 10px 44px 10px 18px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
   color: inherit;
   box-shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  min-width: 190px;
+  background-repeat: no-repeat;
+  background-position: right 16px center;
+  background-size: 14px 14px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%238c0001' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
 }
 
 .admin-table-wrap {
@@ -141,6 +174,8 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
+  table-layout: auto;
+  min-width: 1200px;
 }
 
 .admin-table thead th {
@@ -148,19 +183,26 @@
   font-size: 12px;
   color: rgba(17, 17, 17, 0.65);
   font-weight: 600;
-  padding: 14px 16px;
+  padding: 16px 18px;
   /* Neutral, professional header background */
   background: #f4f5f8;
   position: sticky;
   top: 0;
   z-index: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  word-break: keep-all;
 }
 
 .admin-table tbody td {
-  padding: 14px 16px;
+  padding: 16px 18px;
   border-top: 1px solid rgba(17, 17, 17, 0.08);
   font-size: 13px;
-  vertical-align: top;
+  vertical-align: middle;
+  white-space: normal;
+  word-break: keep-all;
+  overflow-wrap: break-word;
 }
 
 .admin-table tbody tr:nth-child(even) td {
@@ -180,10 +222,14 @@
 }
 
 .admin-clamp {
-  max-width: 360px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  word-break: keep-all;
+  overflow-wrap: break-word;
+  line-height: 1.4;
+  max-height: 2.8em;
 }
 
 .admin-empty {
@@ -245,6 +291,28 @@
   background: #1d1d20;
 }
 
+.admin-tickets-page .admin-toolbar {
+  margin-top: 6px;
+}
+
+.admin-tickets-page .admin-search {
+  width: 360px;
+}
+
+.admin-tickets-page .admin-filter select {
+  min-width: 190px;
+}
+
+.admin-shell.admin-dark .admin-nav-link {
+  color: #efefef;
+}
+
+.admin-shell.admin-dark .admin-nav-link.active {
+  color: #ffd0d0;
+  border-color: rgba(255, 180, 180, 0.35);
+  background: rgba(255, 255, 255, 0.08);
+}
+
 .admin-shell.admin-dark .admin-table-wrap {
   background: #141416;
   border-color: #2b2b2f;
@@ -267,6 +335,10 @@
 @media (max-width: 900px) {
   .admin-page {
     padding: 18px 14px 30px;
+  }
+
+  .admin-topbar {
+    flex-wrap: wrap;
   }
 
   .admin-brand {
@@ -308,4 +380,3 @@
     white-space: normal;
   }
 }
-

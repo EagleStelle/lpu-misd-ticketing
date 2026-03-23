@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Navigate, useNavigate } from "react-router-dom";
-import { Search, ChevronDown, LogOut, Moon } from "lucide-react";
+import { Navigate, NavLink, useNavigate } from "react-router-dom";
+import { Search, ChevronDown, LogOut, Moon, Download } from "lucide-react";
 import { supabase } from "../../supabaseClient";
 import { useLoading } from "../../context/LoadingContext";
 import { useTicketsCache } from "../../context/TicketsCacheContext";
 import "./AdminTickets.css";
+import "./AdminAnalytics.css";
 import lpuLogo from "../../assets/lpul-logo.png";
 
 function getStatusValue(ticket) {
@@ -18,8 +19,18 @@ function getStatusValue(ticket) {
 }
 
 function isClosed(ticket) {
+  if (!ticket) return false;
+  if (ticket.closed_at) return true;
   const s = String(getStatusValue(ticket)).toLowerCase();
   return s.includes("closed") || s.includes("resolved") || s.includes("done");
+}
+
+function escapeCsv(value) {
+  const next = String(value ?? "");
+  if (next.includes(",") || next.includes('"') || next.includes("\n")) {
+    return `"${next.replaceAll('"', '""')}"`;
+  }
+  return next;
 }
 
 export default function AdminTickets() {
@@ -140,6 +151,86 @@ export default function AdminTickets() {
     window.location.href = "/";
   };
 
+  const onExportCsv = () => {
+    const headers = [
+      "id",
+      "summary",
+      "description",
+      "department",
+      "type",
+      "category",
+      "site",
+      "status",
+      "created_at",
+      "closed_at",
+    ];
+    const rows = tickets.map((t) => [
+      t.id,
+      t.Summary,
+      t.Description,
+      t.Department,
+      t.Type,
+      t.Category,
+      t.Site,
+      t.status || t.Status || "Open",
+      t.created_at,
+      t.closed_at,
+    ]);
+    const csv = [headers, ...rows]
+      .map((row) => row.map(escapeCsv).join(","))
+      .join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = `tickets-export-${new Date().toISOString().slice(0, 10)}.csv`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
+
+  const toggleTicketStatus = async (ticket) => {
+    if (!isAdmin || !ticket) return;
+
+    try {
+      showLoading();
+      const shouldReopen = isClosed(ticket);
+      const now = new Date().toISOString();
+      const payload = shouldReopen
+        ? { status: "Open", closed_at: null }
+        : { status: "Closed", closed_at: now };
+      const { data, error } = await supabase
+        .from("Tickets")
+        .eq("id", ticket.id)
+        .update(payload);
+
+      if (error) {
+        console.error("Admin toggle ticket status error:", error);
+        alert(error.message || "Failed to update ticket status");
+        return;
+      }
+
+      const updated = tickets.map((t) =>
+        t.id === ticket.id
+          ? {
+            ...t,
+            ...payload,
+            ...((Array.isArray(data) && data[0]) || {}),
+          }
+          : t,
+      );
+      setTickets(updated);
+      setAdminTickets(updated);
+    } catch (e) {
+      console.error("Unexpected error updating ticket status (admin)", e);
+      alert("Unexpected error updating ticket status");
+    } finally {
+      hideLoading();
+    }
+  };
+
   if (!isLoggedIn) return <Navigate to="/" replace />;
   if (!isAdmin) return <Navigate to="/Tickets" replace />;
 
@@ -176,13 +267,67 @@ export default function AdminTickets() {
   };
 
   return (
-    <div className="admin-page">
-      <header className="admin-topbar">
-        <div className="admin-brand" aria-label="LPU MISD Ticketing">
-          <img src={lpuLogo} alt="LPU Logo" className="admin-brand-logo" />
-        </div>
+    <div className="admin-page analytics-page admin-tickets-page">
+      <header className="analytics-topbar">
+        <div className="analytics-topbar-inner">
+          <div className="analytics-brand" aria-label="LPU MIS Help Desk">
+            <img src={lpuLogo} alt="LPU" className="analytics-brand-logo" />
+            <span className="analytics-brand-text">MIS HELP DESK</span>
+          </div>
 
-        <div className="admin-actions">
+          <nav className="analytics-nav-links" aria-label="Admin navigation">
+            <NavLink
+              to="/admin/tickets"
+              className={({ isActive }) => `analytics-nav-link ${isActive ? "active" : ""}`}
+            >
+              Home
+            </NavLink>
+            <NavLink
+              to="/admin/analytics"
+              className={({ isActive }) => `analytics-nav-link ${isActive ? "active" : ""}`}
+            >
+              Analytics
+            </NavLink>
+          </nav>
+
+          <div className="analytics-actions">
+            <button type="button" className="analytics-export-btn" onClick={onExportCsv}>
+              <Download size={16} />
+              Export CSV
+            </button>
+
+            <div className="admin-menu" ref={menuRef}>
+              <button
+                type="button"
+                className="analytics-menu-btn"
+                onClick={() => setMenuOpen((v) => !v)}
+              >
+                <span>Admin</span>
+                <ChevronDown size={16} />
+              </button>
+
+              {menuOpen && (
+                <div className="admin-menu-pop">
+                  <button type="button" onClick={onLogout}>
+                    <LogOut size={16} />
+                    <span>Logout</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setDarkMode((v) => !v)}
+                  >
+                    <Moon size={16} />
+                    <span>Dark Mode</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <section className="admin-content analytics-content-wrap">
+        <div className="admin-toolbar">
           <div className="admin-search">
             <Search size={16} />
             <input
@@ -192,38 +337,6 @@ export default function AdminTickets() {
               aria-label="Search Tickets"
             />
           </div>
-
-          <div className="admin-menu" ref={menuRef}>
-            <button
-              type="button"
-              className="admin-menu-btn"
-              onClick={() => setMenuOpen((v) => !v)}
-            >
-              <span>Admin</span>
-              <ChevronDown size={16} />
-            </button>
-
-            {menuOpen && (
-              <div className="admin-menu-pop">
-                <button type="button" onClick={onLogout}>
-                  <LogOut size={16} />
-                  <span>Logout</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDarkMode((v) => !v)}
-                >
-                  <Moon size={16} />
-                  <span>Dark Mode</span>
-                </button>
-              </div>
-            )}
-          </div>
-        </div>
-      </header>
-
-      <section className="admin-content">
-        <div className="admin-toolbar">
           <div className="admin-filter">
             <select value={filter} onChange={(e) => setFilter(e.target.value)}>
               <option>Open Tickets</option>
@@ -246,12 +359,16 @@ export default function AdminTickets() {
                   <th>Type</th>
                   <th>Department</th>
                   <th>Category</th>
+                  <th>Created</th>
+                  <th>Closed</th>
+                  <th>Status</th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
                 {filtered.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="admin-empty">
+                    <td colSpan={11} className="admin-empty">
                       No tickets found.
                     </td>
                   </tr>
@@ -292,6 +409,25 @@ export default function AdminTickets() {
                       <td>{t.Type || "-"}</td>
                       <td>{t.Department || "-"}</td>
                       <td>{t.Category || "-"}</td>
+                      <td>{t.created_at ? new Date(t.created_at).toLocaleString() : "-"}</td>
+                      <td>{t.closed_at ? new Date(t.closed_at).toLocaleString() : "-"}</td>
+                      <td>{t.status || t.Status || "Open"}</td>
+                      <td onClick={(e) => e.stopPropagation()}>
+                        <button
+                          type="button"
+                          onClick={() => toggleTicketStatus(t)}
+                          style={{
+                            padding: "4px 8px",
+                            border: "1px solid #888",
+                            borderRadius: "4px",
+                            background: isClosed(t) ? "#1976d2" : "#4caf50",
+                            color: "white",
+                            cursor: "pointer",
+                          }}
+                        >
+                          {isClosed(t) ? "Reopen" : "Close"}
+                        </button>
+                      </td>
                     </tr>
                   ))
                 )}
