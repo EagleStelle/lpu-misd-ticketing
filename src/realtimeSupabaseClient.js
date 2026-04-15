@@ -20,6 +20,15 @@ const authFetch = (url, options = {}) => {
 };
 
 export const realtimeSupabase = createClient(SUPABASE_URL, ANON_KEY, {
+  auth: {
+    // Implicit flow puts the token directly in the URL hash — no PKCE code
+    // exchange needed. This avoids the "expired" error that happens when:
+    // (a) detectSessionInUrl auto-exchanges the code AND our callback tries
+    //     to exchange it again (double exchange), or
+    // (b) the email is opened in a different browser where the PKCE verifier
+    //     is not stored.
+    flowType: "implicit",
+  },
   global: { fetch: authFetch },
 });
 

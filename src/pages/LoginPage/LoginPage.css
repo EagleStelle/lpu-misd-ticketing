@@ -3,7 +3,12 @@
     align-items: center;
     justify-content: center;
     min-height: 100vh;
-    background: radial-gradient(1200px 700px at 20% 15%, #ffffff 0%, #f3f3f3 45%, #ededed 100%);
+    background: radial-gradient(
+        1200px 700px at 20% 15%,
+        #ffffff 0%,
+        #f3f3f3 45%,
+        #ededed 100%
+    );
     font-family: "Poppins", "Bai Jamjuree", sans-serif;
     padding: 24px;
 }
@@ -38,16 +43,15 @@
 
 .login-panel {
     background-color: #8c0001;
-    padding: 72px 64px;
+    padding: 60px 64px;
     display: flex;
     flex-direction: column;
     justify-content: center;
-    gap: 28px;
+    gap: 20px;
 }
 
 .login-heading {
     text-align: center;
-    transform: translateY(-6px);
 }
 
 .login-title {
@@ -67,6 +71,54 @@
     text-transform: uppercase;
 }
 
+/* ── Mode Toggle Styles ── */
+.mode-toggle-container {
+    display: flex;
+    position: relative;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+    padding: 4px;
+    margin: 10px 0;
+    width: 100%;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.mode-btn {
+    flex: 1;
+    padding: 10px;
+    border: none;
+    background: transparent;
+    cursor: pointer;
+    z-index: 2;
+    font-weight: 600;
+    font-size: 13px;
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.3s ease;
+    font-family: inherit;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.mode-btn.active {
+    color: #8c0001;
+}
+
+.mode-toggle-slider {
+    position: absolute;
+    top: 4px;
+    left: 4px;
+    width: calc(50% - 4px);
+    height: calc(100% - 8px);
+    background: white;
+    border-radius: 8px;
+    transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    z-index: 1;
+}
+
+.mode-toggle-slider.admin {
+    transform: translateX(100%);
+}
+
 .error-message {
     background-color: #ff6b6b;
     color: white;
@@ -80,7 +132,6 @@ form {
     display: flex;
     flex-direction: column;
     gap: 18px;
-    margin-top: 4px;
 }
 
 .password-input-wrapper {
@@ -99,7 +150,11 @@ form {
     background-color: rgba(140, 0, 1, 0.45);
     color: #ffffff;
     outline: none;
-    transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+    transition:
+        border-color 0.2s ease,
+        box-shadow 0.2s ease,
+        background-color 0.2s ease;
+    box-sizing: border-box;
 }
 
 .password-toggle-btn {
@@ -122,11 +177,6 @@ form {
     color: rgba(255, 255, 255, 0.95);
 }
 
-.password-toggle-btn:focus {
-    outline: none;
-    color: rgba(255, 255, 255, 0.95);
-}
-
 .login-input::placeholder {
     color: rgba(255, 255, 255, 0.7);
 }
@@ -138,23 +188,28 @@ form {
 }
 
 .login-btn {
-    padding: 12px 20px;
+    padding: 14px 20px;
     border: none;
     border-radius: 999px;
     background-color: white;
-    color: #CF2525;
+    color: #cf2525;
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
-    transition: transform 0.12s ease, background-color 0.2s ease, opacity 0.2s ease;
+    transition:
+        transform 0.12s ease,
+        background-color 0.2s ease,
+        opacity 0.2s ease;
     margin-top: 10px;
-    align-self: center;
-    width: min(280px, 100%);
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .login-btn:hover {
     transform: translateY(-2px);
     background-color: #f5f5f5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
 .login-btn:active {
@@ -166,24 +221,67 @@ form {
     cursor: not-allowed;
 }
 
-.forgot-password {
+/* ── Magic-link "email sent" state ─────────────────────────────────── */
+.magic-sent {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
     text-align: center;
-    color: white;
-    text-decoration: none;
-    font-size: 12px;
-    margin-top: -12px;
-    transition: opacity 0.2s ease;
+    padding: 8px 0;
 }
 
-.forgot-password:hover {
-    opacity: 0.8;
+.magic-sent-icon {
+    font-size: 2.4rem;
+    line-height: 1;
 }
 
-.demo-credentials {
-    text-align: center;
-    color: rgba(255, 255, 255, 0.7);
-    margin-top: 20px;
-    font-size: 0.85rem;
+.magic-sent-title {
+    color: #ffffff;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0;
+}
+
+.magic-sent-body {
+    color: rgba(255, 255, 255, 0.85);
+    font-size: 0.875rem;
+    margin: 0;
+    line-height: 1.6;
+}
+
+.magic-sent-body strong {
+    color: #ffffff;
+    word-break: break-all;
+}
+
+.magic-resend-btn {
+    padding: 14px 20px;
+    border: none;
+    border-radius: 999px;
+    background-color: white;
+    color: #cf2525;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition:
+        transform 0.12s ease,
+        background-color 0.2s ease,
+        opacity 0.2s ease;
+    margin-top: 10px;
+    width: 100%;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.magic-resend-btn:hover {
+    transform: translateY(-2px);
+    background-color: #f5f5f5;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.magic-resend-btn:active {
+    transform: translateY(0);
 }
 
 @media (max-width: 480px) {
