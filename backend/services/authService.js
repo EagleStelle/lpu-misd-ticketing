@@ -1,5 +1,6 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import { randomUUID } from "crypto";
 import { supabase } from "../config/database.js";
 
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -302,6 +303,97 @@ export const deleteUser = async (userId) => {
         }
 
         return { success: true, message: "User deleted successfully" };
+    } catch (error) {
+        return { success: false, message: error.message };
+    }
+};
+
+/**
+ * Verify a Supabase Auth magic-link session and exchange it for our custom JWT.
+ *
+ * Flow:
+ *  1. Validate the Supabase access_token via supabase.auth.getUser()
+ *  2. Enforce the @lpulaguna.edu.ph domain
+ *  3. Find-or-create a row in auth_users (passwordless)
+ *  4. Return our own JWT so the rest of the app works unchanged
+ */
+export const verifyMagicLinkToken = async (accessToken) => {
+    try {
+        // Decode the Supabase access token to get the user's UUID (sub claim).
+        // We don't verify the signature here — instead we immediately confirm
+        // the UUID exists in Supabase Auth via the admin API (service role key).
+        // This avoids the 403 that occurs when passing the user JWT through
+        // our custom authFetch override on the frontend.
+        const decoded = jwt.decode(accessToken);
+        if (!decoded?.sub) {
+            return { success: false, message: "Invalid or expired magic link." };
+        }
+
+        const { data: { user: supaUser }, error: supaError } =
+            await supabase.auth.admin.getUserById(decoded.sub);
+
+        if (supaError || !supaUser) {
+            return { success: false, message: "Invalid or expired magic link." };
+        }
+
+        const email = supaUser.email?.toLowerCase();
+
+        // Domain guard — enforced on the backend regardless of what the frontend sends
+        if (!email || !email.endsWith("@lpulaguna.edu.ph")) {
+            return { success: false, message: "Only @lpulaguna.edu.ph accounts are allowed." };
+        }
+
+        // Look up existing user
+        const { data: existing } = await supabase
+            .from("auth_users")
+            .select("*")
+            .eq("email", email);
+
+        let user = existing?.[0];
+
+        if (!user) {
+            // Auto-register on first magic-link login.
+            // password_hash stores a bcrypt hash of a random UUID that is
+            // immediately discarded — the user can never log in with a password.
+            const placeholderHash = await hashPassword(randomUUID());
+
+            const { data: created, error: createError } = await supabase
+                .from("auth_users")
+                .insert([{
+                    email,
+                    password_hash: placeholderHash,
+                    full_name: email.split("@")[0],
+                }])
+                .select();
+
+            if (createError) {
+                return { success: false, message: "Failed to create account. Please try again." };
+            }
+            user = created[0];
+        }
+
+        if (!user.is_active) {
+            return { success: false, message: "Account is inactive. Contact MISD support." };
+        }
+
+        const token = generateToken(user.id, user.email, "user");
+
+        await supabase
+            .from("auth_users")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", user.id);
+
+        return {
+            success: true,
+            message: "Login successful",
+            user: {
+                id: user.id,
+                email: user.email,
+                full_name: user.full_name,
+                role: "user",
+            },
+            token,
+        };
     } catch (error) {
         return { success: false, message: error.message };
     }

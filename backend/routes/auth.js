@@ -8,6 +8,7 @@ import {
     updateUser,
     deleteUser,
     changePassword,
+    verifyMagicLinkToken,
 } from "../services/authService.js";
 import { authMiddleware } from "../middleware/auth.js";
 
@@ -198,6 +199,38 @@ router.post("/change-password", authMiddleware, async (req, res) => {
         return res.status(500).json({
             success: false,
             message: "Error changing password",
+            error: error.message,
+        });
+    }
+});
+
+/**
+ * POST /api/auth/magic-verify
+ * Exchange a Supabase Auth access_token (from a magic-link session) for our
+ * own custom JWT. Auto-registers the user on first login.
+ */
+router.post("/magic-verify", async (req, res) => {
+    try {
+        const { access_token } = req.body;
+
+        if (!access_token) {
+            return res.status(400).json({
+                success: false,
+                message: "access_token is required",
+            });
+        }
+
+        const result = await verifyMagicLinkToken(access_token);
+
+        if (!result.success) {
+            return res.status(401).json(result);
+        }
+
+        return res.status(200).json(result);
+    } catch (error) {
+        return res.status(500).json({
+            success: false,
+            message: "Magic link verification error",
             error: error.message,
         });
     }

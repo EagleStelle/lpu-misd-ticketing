@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import { jwtDecode } from "jwt-decode";
 import LoginPage from "../LoginPage/LoginPage";
+import MagicLinkCallback from "../MagicLinkCallback/MagicLinkCallback";
 import Tickets from "../MainDashboard/Tickets";
 import TicketChat from "../MainDashboard/TicketChat";
 import SubmitTicket from "../MainDashboard/SubmitTicket";
@@ -50,6 +51,7 @@ function App() {
       <LoadingScreen isLoading={isLoading} />
       <Routes>
         <Route path="/" element={<LoginPage />} />
+        <Route path="/auth/callback" element={<MagicLinkCallback />} />
 
         <Route
           element={

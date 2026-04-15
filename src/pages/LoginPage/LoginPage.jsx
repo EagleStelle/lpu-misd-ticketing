@@ -3,23 +3,68 @@ import { useNavigate } from "react-router-dom";
 import { Eye, EyeOff } from "lucide-react";
 import "./LoginPage.css";
 import { getApiBaseUrl } from "../../utils/apiBaseUrl";
+import supabaseAuth from "../../supabaseAuthClient";
 
 const LoginPage = () => {
+  const [mode, setMode] = useState("magic"); // "magic" | "admin"
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e) => {
+  const switchMode = (next) => {
+    setMode(next);
+    setError("");
+    setEmail("");
+    setPassword("");
+    setEmailSent(false);
+  };
+
+  // ── Student magic-link flow ─────────────────────────────────────────────
+  const handleMagicLink = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!email.toLowerCase().endsWith("@lpulaguna.edu.ph")) {
+      setError("Only @lpulaguna.edu.ph email addresses are allowed.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const { error: supaError } = await supabaseAuth.auth.signInWithOtp({
+        email,
+        options: {
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          shouldCreateUser: true,
+        },
+      });
+
+      if (supaError) {
+        setError(supaError.message || "Failed to send magic link. Please try again.");
+        return;
+      }
+
+      setEmailSent(true);
+    } catch (err) {
+      setError(err.message || "Failed to send magic link.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── Admin password flow ─────────────────────────────────────────────────
+  const handleAdminLogin = async (e) => {
     e.preventDefault();
     setError("");
     setIsLoading(true);
 
     try {
       const API_BASE_URL = getApiBaseUrl();
-      const res = await fetch(`${API_BASE_URL}/api/auth/login`, {
+      const res = await fetch(`${API_BASE_URL}/api/auth/admin-login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),
@@ -36,9 +81,9 @@ const LoginPage = () => {
       if (data.user?.id) localStorage.setItem("userId", data.user.id);
       localStorage.setItem("isLoggedIn", "true");
       localStorage.setItem("userEmail", data.user?.email || email);
-      localStorage.setItem("userRole", data.user?.role || "user");
+      localStorage.setItem("userRole", data.user?.role || "admin");
 
-      navigate(data.user?.role === "admin" ? "/admin/tickets" : "/Tickets");
+      navigate("/admin/tickets");
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {
@@ -57,49 +102,98 @@ const LoginPage = () => {
             <p className="login-subtitle">TO LPU-L MISD HELP DESK</p>
           </div>
 
+          {/* ── Mode Toggle Flip ── */}
+          <div className="mode-toggle-container">
+            <div className={`mode-toggle-slider ${mode}`} />
+            <button 
+              type="button" 
+              className={`mode-btn ${mode === "magic" ? "active" : ""}`}
+              onClick={() => switchMode("magic")}
+            >
+              Student
+            </button>
+            <button 
+              type="button" 
+              className={`mode-btn ${mode === "admin" ? "active" : ""}`}
+              onClick={() => switchMode("admin")}
+            >
+              Admin
+            </button>
+          </div>
+
           {error && <div className="error-message">{error}</div>}
 
-          <form onSubmit={handleLogin}>
-            <input
-              type="email"
-              placeholder="Email"
-              className="login-input"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-
-            <div className="password-input-wrapper">
+          {/* ── Student Form ── */}
+          {mode === "magic" && !emailSent && (
+            <form onSubmit={handleMagicLink}>
               <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
+                type="email"
+                placeholder="Email"
                 className="login-input"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="email"
                 required
               />
+              <button type="submit" className="login-btn" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
+              </button>
+            </form>
+          )}
+
+          {mode === "magic" && emailSent && (
+            <div className="magic-sent">
+              <div className="magic-sent-icon" aria-hidden="true">✉</div>
+              <p className="magic-sent-title">Check your inbox</p>
+              <p className="magic-sent-body">
+                We sent a sign-in link to<br />
+                <strong>{email}</strong>
+              </p>
               <button
                 type="button"
-                className="password-toggle-btn"
-                onClick={() => setShowPassword(!showPassword)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
+                className="magic-resend-btn"
+                onClick={() => { setEmailSent(false); setEmail(""); }}
               >
-                {showPassword ? (
-                  <EyeOff size={18} />
-                ) : (
-                  <Eye size={18} />
-                )}
+                Use a different email
               </button>
             </div>
+          )}
 
-            <button type="submit" className="login-btn" disabled={isLoading}>
-              {isLoading ? "Logging in..." : "Login"}
-            </button>
-          </form>
-
-          <a href="#" className="forgot-password">
-            Forgot Password
-          </a>
+          {/* ── Admin Form ── */}
+          {mode === "admin" && (
+            <form onSubmit={handleAdminLogin}>
+              <input
+                type="email"
+                placeholder="Email"
+                className="login-input"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                autoComplete="username"
+                required
+              />
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  placeholder="Password"
+                  className="login-input"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                />
+                <button
+                  type="button"
+                  className="password-toggle-btn"
+                  onClick={() => setShowPassword(!showPassword)}
+                >
+                  {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                </button>
+              </div>
+              <button type="submit" className="login-btn" disabled={isLoading}>
+                {isLoading ? "Logging in..." : "Login"}
+              </button>
+            </form>
+          )}
         </div>
       </div>
     </div>
