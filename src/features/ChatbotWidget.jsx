@@ -119,8 +119,7 @@ function ChatbotWidget() {
     <>
       {/* Floating toggle button */}
       <button
-        className={`fixed z-1002 w-13 h-13 rounded-full bg-lpu-maroon text-white flex items-center justify-center shadow-lg transition-all hover:bg-lpu-red hover:scale-105 active:scale-95 
-          ${isOpen ? "bottom-7 right-7" : "bottom-7 right-7 max-md:bottom-20.5 max-md:right-4"}`}
+        className="fixed z-1002 w-13 h-13 rounded-full bg-lpu-maroon text-white flex items-center justify-center shadow-lg transition-all hover:bg-lpu-red hover:scale-105 active:scale-95 bottom-7 right-7 max-md:bottom-20.5 max-md:right-4"
         onClick={() => setIsOpen((o) => !o)}
         aria-label="Toggle support chat"
       >
