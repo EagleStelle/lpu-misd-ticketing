@@ -16,7 +16,7 @@ const UserLayout = () => {
         onToggleCollapse={() => setIsSidePanelCollapsed((prev) => !prev)}
       />
       <main
-        className={`min-h-dvh md:transition-[margin-left] md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:md:transition-none ${sidePanelOffsetClass}${isChat ? " p-0 overflow-y-hidden" : ""}`}
+        className={`min-h-dvh max-md:pb-[calc(6rem+env(safe-area-inset-bottom))] md:transition-[margin-left] md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:md:transition-none ${sidePanelOffsetClass}${isChat ? " p-0 overflow-y-hidden" : ""}`}
       >
         <Outlet />
       </main>

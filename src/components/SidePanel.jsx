@@ -42,7 +42,7 @@ const SidePanel = ({ collapsed, onToggleCollapse }) => {
         md:transition-[width,padding] md:duration-500 md:ease-[cubic-bezier(0.22,1,0.36,1)] motion-reduce:md:transition-none
         md:fixed md:top-0 md:left-0 md:h-full md:p-4
         ${collapsed ? "md:w-25" : "md:w-87.5"}
-        max-md:relative max-md:w-full max-md:h-auto max-md:flex-row max-md:rounded-t-2xl max-md:pb-[env(safe-area-inset-bottom)] max-md:shadow-[0_-4px_20px_rgba(0,0,0,0.2)]
+        max-md:fixed max-md:bottom-0 max-md:left-0 max-md:right-0 max-md:w-full max-md:h-auto max-md:flex-row max-md:rounded-t-2xl max-md:pb-[env(safe-area-inset-bottom)] max-md:shadow-[0_-4px_20px_rgba(0,0,0,0.2)]
       `}
     >
       {/* ── Refined Dangling Toggle Handle ── */}
