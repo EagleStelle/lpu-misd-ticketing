@@ -9,17 +9,23 @@ import { DataTable, TableBadge } from "../../components/DataTable";
 
 const PAGE_SIZE = 10;
 
-function getTicketPriority(ticket) {
-  return ticket?.Priority ?? ticket?.priority ?? "";
+function getTicketStatus(ticket) {
+  if (ticket?.closed_at) return "complete";
+  const slaBreached =
+    ticket?.sla_met === false ||
+    (ticket?.sla_due_at && Date.parse(ticket.sla_due_at) < Date.now());
+  if (slaBreached) return "overdue";
+  const hasAssignee = ticket?.Assignee1 || ticket?.Assignee2 || ticket?.Assignee3;
+  if (!hasAssignee) return "unassigned";
+  return "ongoing";
 }
 
-function getPriorityBadgeVariant(priority) {
-  const val = String(priority || "").trim().toLowerCase();
-  if (val === "high" || val === "urgent" || val === "critical") return "danger";
-  if (val === "medium" || val === "normal") return "warning";
-  if (val === "low") return "info";
-  return "default";
-}
+const STATUS_LABELS = {
+  complete: "Complete",
+  overdue: "Overdue",
+  unassigned: "Unassigned",
+  ongoing: "Ongoing",
+};
 
 function Tickets() {
   const navigate = useNavigate();
@@ -35,13 +41,12 @@ function Tickets() {
   const columns = [
     { label: "Ticket No.", accessor: "id", variant: "badge" },
     {
-      label: "Priority",
-      accessor: (row) => getTicketPriority(row),
+      label: "Status",
       render: (row) => {
-        const priority = getTicketPriority(row);
+        const status = getTicketStatus(row);
         return (
-          <TableBadge variant={getPriorityBadgeVariant(priority)}>
-            {priority ? String(priority) : "—"}
+          <TableBadge variant={`status-${status}`}>
+            {STATUS_LABELS[status]}
           </TableBadge>
         );
       },

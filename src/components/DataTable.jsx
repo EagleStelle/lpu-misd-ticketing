@@ -48,6 +48,10 @@ const BADGE_STYLES = {
   warning: "bg-orange-100 text-orange-700 border-orange-200",
   danger: "bg-red-50 text-red-700 border-red-200",
   info: "bg-lpu-maroon/10 text-lpu-maroon border-lpu-maroon/20",
+  "status-ongoing": "bg-green-800/10 text-green-800 border-green-800/30",
+  "status-unassigned": "bg-lpu-gold/10 text-yellow-700 border-lpu-gold/50",
+  "status-overdue": "bg-lpu-red/10 text-lpu-red border-lpu-red/40",
+  "status-complete": "bg-blue-50 text-blue-700 border-blue-200",
 };
 
 export function TableBadge({
@@ -224,15 +228,15 @@ export function DataTable({
           return (
             <div className="relative w-full">
               <div
-                className={`h-8 flex items-center justify-between rounded-md px-2 text-xs font-semibold select-none ${pillClassName}`}
+                className={`h-9 flex items-center justify-between rounded-lg px-3 text-sm font-bold select-none ${pillClassName}`}
               >
                 <span className="truncate">
                   {displayValue || col.placeholder || "Select…"}
                 </span>
-                <span className="ml-2 text-[10px] opacity-80">▾</span>
+                <span className="ml-2 text-[10px] opacity-60">▾</span>
               </div>
               <select
-                className={`absolute inset-0 w-full h-8 opacity-0 cursor-pointer ${selectExtraClass}`}
+                className={`absolute inset-0 w-full h-9 opacity-0 cursor-pointer ${selectExtraClass}`}
                 value={value || ""}
                 onChange={(e) =>
                   col.onChange && col.onChange(row, e.target.value)

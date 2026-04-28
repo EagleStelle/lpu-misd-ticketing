@@ -77,9 +77,13 @@ export default function TicketDetails({
     };
   })();
 
-  const historySnapshots = (Array.isArray(timelineHistory) ? timelineHistory : [])
+  const historySnapshots = (
+    Array.isArray(timelineHistory) ? timelineHistory : []
+  )
     .map((row) => ({
-      key: row?.id ? `hist-${row.id}` : `hist-${row?.closed_at || Math.random()}`,
+      key: row?.id
+        ? `hist-${row.id}`
+        : `hist-${row?.closed_at || Math.random()}`,
       source: "history",
       priority: row?.priority ?? row?.Priority ?? null,
       timer_started_at: row?.timer_started_at ?? row?.started_at ?? null,
@@ -92,16 +96,21 @@ export default function TicketDetails({
       sla_met: row?.sla_met ?? null,
       closed_at: row?.closed_at ?? null,
     }))
-    .filter((s) => s.closed_at || s.timer_stopped_at || s.timer_duration_seconds);
+    .filter(
+      (s) => s.closed_at || s.timer_stopped_at || s.timer_duration_seconds,
+    );
 
   const snapshots = (() => {
     const closedAt = ticket?.closed_at || ticket?.closedAt || null;
     const topHistoryClosedAt = historySnapshots[0]?.closed_at || null;
     const shouldOmitCurrentBecauseDup =
-      closedAt && topHistoryClosedAt && String(closedAt) === String(topHistoryClosedAt);
+      closedAt &&
+      topHistoryClosedAt &&
+      String(closedAt) === String(topHistoryClosedAt);
 
     const list = [];
-    if (currentSnapshot && !shouldOmitCurrentBecauseDup) list.push(currentSnapshot);
+    if (currentSnapshot && !shouldOmitCurrentBecauseDup)
+      list.push(currentSnapshot);
     list.push(...historySnapshots);
     return list;
   })();
@@ -136,7 +145,7 @@ export default function TicketDetails({
 
         {/* Right Side: Created Info + Summary Toggle */}
         <div className="flex items-center gap-2 sm:gap-4">
-          <div className="text-right flex flex-col justify-center">
+          <div className="text-right flex flex-col justify-center hidden sm:flex">
             <span className="text-[9px] font-bold text-gray-400 uppercase leading-none mb-0.5">
               Created
             </span>
@@ -174,7 +183,11 @@ export default function TicketDetails({
             <span className="hidden sm:inline font-bold uppercase text-xs tracking-tight">
               Summary
             </span>
-            {expandedSummary ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+            {expandedSummary ? (
+              <ChevronUp size={14} />
+            ) : (
+              <ChevronDown size={14} />
+            )}
           </button>
         </div>
       </div>
@@ -182,10 +195,10 @@ export default function TicketDetails({
       {/* Timeline Section */}
       <div
         className={`overflow-hidden transition-all duration-300 ease-in-out bg-gray-50/50 ${
-          expandedTimeline ? "max-h-[520px] border-t border-gray-100" : "max-h-0"
+          expandedTimeline ? "max-h-130 border-t border-gray-100" : "max-h-0"
         }`}
       >
-        <div className="p-4 sm:p-5 space-y-3 overflow-y-auto max-h-[520px]">
+        <div className="p-4 sm:p-5 space-y-3 overflow-y-auto max-h-130">
           {snapshots.length === 0 ? (
             <div className="text-sm text-gray-500 italic">No timeline yet.</div>
           ) : (
@@ -282,7 +295,11 @@ export default function TicketDetails({
                             : "text-gray-600"
                       }`}
                     >
-                      {s.sla_met === true ? "Yes" : s.sla_met === false ? "No" : "—"}
+                      {s.sla_met === true
+                        ? "Yes"
+                        : s.sla_met === false
+                          ? "No"
+                          : "—"}
                     </span>
                   </div>
                 </div>

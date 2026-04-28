@@ -28,22 +28,26 @@ function getTicketPriority(ticket) {
 }
 
 function getPrioritySelectClass(priority) {
-  const val = String(priority || "").trim().toLowerCase();
-  if (val === "high") return "border-red-700";
-  if (val === "medium") return "border-yellow-500";
-  if (val === "low") return "border-green-700";
+  const val = String(priority || "")
+    .trim()
+    .toLowerCase();
+  if (val === "high") return "border-lpu-red";
+  if (val === "medium") return "border-lpu-gold";
+  if (val === "low") return "border-green-800";
   return "";
 }
 
 function getPriorityPillClass(priority) {
-  const val = String(priority || "").trim().toLowerCase();
+  const val = String(priority || "")
+    .trim()
+    .toLowerCase();
   if (val === "high")
-    return "bg-red-600 text-white border border-red-700";
+    return "bg-lpu-red/10 border border-lpu-red/40 text-lpu-red";
   if (val === "medium")
-    return "bg-yellow-400 text-black border border-yellow-500";
+    return "bg-lpu-gold/10 border border-lpu-gold/50 text-yellow-700";
   if (val === "low")
-    return "bg-green-600 text-white border border-green-700";
-  return "bg-gray-100 text-gray-700 border border-gray-200";
+    return "bg-green-800/10 border border-green-800/30 text-green-800";
+  return "bg-gray-50 border border-gray-200 text-gray-500";
 }
 
 const PRIORITY_OPTIONS = [
@@ -67,7 +71,14 @@ function buildSearchFilter(q, search) {
   return q.or(parts.join(","));
 }
 
-function AssigneeCell({ ticket, assignableAdmins, adminNameMap, isGlobalAdmin, onAdd, onRemove }) {
+function AssigneeCell({
+  ticket,
+  assignableAdmins,
+  adminNameMap,
+  isGlobalAdmin,
+  onAdd,
+  onRemove,
+}) {
   const slots = ["Assignee1", "Assignee2", "Assignee3"];
   const assigned = slots.map((s) => ticket[s]).filter(Boolean);
   const available = assignableAdmins.filter((a) => !assigned.includes(a.id));
@@ -80,17 +91,25 @@ function AssigneeCell({ ticket, assignableAdmins, adminNameMap, isGlobalAdmin, o
   };
 
   return (
-    <div className="flex flex-col gap-1 py-0.5" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="flex flex-col gap-1 py-0.5"
+      onClick={(e) => e.stopPropagation()}
+    >
       {assigned.map((id) => (
         <div
           key={id}
           className="flex items-center gap-1 h-7 pl-2.5 pr-1.5 bg-lpu-maroon/10 border border-lpu-maroon/20 rounded-lg text-xs font-bold text-lpu-maroon whitespace-nowrap max-w-full"
         >
-          <span className="truncate flex-1 min-w-0">{adminNameMap[id] || id}</span>
+          <span className="truncate flex-1 min-w-0">
+            {adminNameMap[id] || id}
+          </span>
           {isGlobalAdmin && (
             <button
               type="button"
-              onClick={(e) => { e.stopPropagation(); onRemove(ticket, id); }}
+              onClick={(e) => {
+                e.stopPropagation();
+                onRemove(ticket, id);
+              }}
               className="shrink-0 p-0.5 rounded hover:bg-lpu-maroon/20 transition-colors"
               title="Remove assignee"
             >
@@ -107,12 +126,19 @@ function AssigneeCell({ ticket, assignableAdmins, adminNameMap, isGlobalAdmin, o
             onClick={(e) => e.stopPropagation()}
             className="w-full h-7 appearance-none pl-2.5 pr-6 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-500 outline-none focus:ring-2 focus:ring-lpu-gold focus:border-lpu-gold cursor-pointer"
           >
-            <option value="" disabled>Add assignee…</option>
+            <option value="" disabled>
+              Add assignee…
+            </option>
             {available.map((a) => (
-              <option key={a.id} value={a.id}>{a.full_name || a.email}</option>
+              <option key={a.id} value={a.id}>
+                {a.full_name || a.email}
+              </option>
             ))}
           </select>
-          <ChevronDown size={12} className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+          <ChevronDown
+            size={12}
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+          />
         </div>
       )}
       {assigned.length === 0 && available.length === 0 && (
@@ -360,7 +386,10 @@ export default function AdminTickets() {
         .from("Tickets")
         .update(payload)
         .eq("id", ticket.id);
-      if (error) { alert(error.message || "Failed to update assignees"); return; }
+      if (error) {
+        alert(error.message || "Failed to update assignees");
+        return;
+      }
       setTickets((prev) =>
         prev.map((t) => (t.id === ticket.id ? { ...t, ...payload } : t)),
       );
@@ -384,7 +413,10 @@ export default function AdminTickets() {
         .from("Tickets")
         .update(payload)
         .eq("id", ticket.id);
-      if (error) { alert(error.message || "Failed to update assignees"); return; }
+      if (error) {
+        alert(error.message || "Failed to update assignees");
+        return;
+      }
       setTickets((prev) =>
         prev.map((t) => (t.id === ticket.id ? { ...t, ...payload } : t)),
       );
@@ -422,12 +454,14 @@ export default function AdminTickets() {
         label: "Priority",
         accessor: (row) => getTicketPriority(row),
         variant: "select",
+        colWidth: "w-32 md:w-36",
         preventRowClick: true,
         placeholder: "Set priority…",
         options: PRIORITY_OPTIONS,
         onChange: (row, value) => handlePriorityChange(row, value),
         fallbackText: (row) => getTicketPriority(row) || "—",
-        selectClassName: (row) => getPrioritySelectClass(getTicketPriority(row)),
+        selectClassName: (row) =>
+          getPrioritySelectClass(getTicketPriority(row)),
         pillClassName: (row) => getPriorityPillClass(getTicketPriority(row)),
         getDisplayValue: (_row, value) => value || "Set priority…",
       },

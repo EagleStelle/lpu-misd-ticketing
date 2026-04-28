@@ -37,6 +37,7 @@ export default function TicketChat({ adminView = false } = {}) {
   const [viewerEmail, setViewerEmail] = useState("");
   const [nowMs, setNowMs] = useState(() => Date.now());
   const [adminDirectory, setAdminDirectory] = useState({});
+  const adminDirectoryRef = useRef({});
   const [creatorProfile, setCreatorProfile] = useState(null);
 
   const normalizeTicketId = (value) => {
@@ -302,7 +303,8 @@ export default function TicketChat({ adminView = false } = {}) {
     if (Array.isArray(cached) && cached.length > 0) {
       setMessages(cached);
     }
-  }, [ticketKey, getMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketKey]);
 
   // Load existing messages + subscribe to realtime updates
   useEffect(() => {
@@ -406,10 +408,10 @@ export default function TicketChat({ adminView = false } = {}) {
   }, [ticketKey]);
 
   useEffect(() => {
-    if (!ticketKey) return;
-    if (cachedMessages === messages) return;
+    if (!ticketKey || !messages.length) return;
     cacheMessages(ticketKey, messages);
-  }, [ticketKey, messages, cachedMessages, cacheMessages]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ticketKey, messages]);
 
   useEffect(() => {
     const el = scrollRef.current;
@@ -452,7 +454,8 @@ export default function TicketChat({ adminView = false } = {}) {
 
     if (!adminIds.size) return;
 
-    const missingIds = Array.from(adminIds).filter((id) => !adminDirectory[id]);
+    adminDirectoryRef.current = adminDirectory;
+    const missingIds = Array.from(adminIds).filter((id) => !adminDirectoryRef.current[id]);
 
     if (!missingIds.length) return;
 
@@ -463,7 +466,7 @@ export default function TicketChat({ adminView = false } = {}) {
       if (!token) return;
 
       const baseUrl = getApiBaseUrl();
-      const next = { ...adminDirectory };
+      const next = { ...adminDirectoryRef.current };
       let didUpdate = false;
 
       const setEntry = (key, value) => {
@@ -506,7 +509,8 @@ export default function TicketChat({ adminView = false } = {}) {
     return () => {
       isCancelled = true;
     };
-  }, [messages, adminDirectory, id, adminView]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [messages, id, adminView]);
 
   async function handleSend() {
     const trimmed = text.trim();

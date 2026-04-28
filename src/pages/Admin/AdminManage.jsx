@@ -184,14 +184,24 @@ export default function AdminManage() {
         if (isSelf) {
           return (
             <TableBadge variant="info" className="w-full justify-start">
-              {ADMIN_LEVEL_LABELS[row.admin_level] ?? row.admin_level} (You)
+              {/* Desktop view */}
+              <span className="hidden md:inline">
+                {ADMIN_LEVEL_LABELS[row.admin_level] ?? row.admin_level} (You)
+              </span>
+              {/* Mobile view */}
+              <span className="md:hidden">You</span>
             </TableBadge>
           );
         }
         if (row.is_root) {
           return (
             <TableBadge variant="info" className="w-full justify-start">
-              {ADMIN_LEVEL_LABELS[row.admin_level] ?? row.admin_level} (Root)
+              {/* Desktop view */}
+              <span className="hidden md:inline">
+                {ADMIN_LEVEL_LABELS[row.admin_level] ?? row.admin_level} (Root)
+              </span>
+              {/* Mobile view */}
+              <span className="md:hidden">Root</span>
             </TableBadge>
           );
         }
