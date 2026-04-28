@@ -38,14 +38,20 @@ function Tickets() {
   const [totalCount, setTotalCount] = useState(0);
   const [realtimeTick, setRealtimeTick] = useState(0);
 
+  const isClosedFilter = filter === "Closed Tickets";
+
   const columns = [
     { label: "Ticket No.", accessor: "id", variant: "badge" },
     {
       label: "Status",
+      colWidth: "w-32",
       render: (row) => {
         const status = getTicketStatus(row);
         return (
-          <TableBadge variant={`status-${status}`}>
+          <TableBadge
+            variant={`status-${status}`}
+            className="w-28 justify-center"
+          >
             {STATUS_LABELS[status]}
           </TableBadge>
         );
@@ -53,10 +59,43 @@ function Tickets() {
     },
     { label: "Summary", accessor: "Summary", variant: "title" },
     { label: "Description", accessor: "Description", variant: "subtitle" },
-    { label: "Department", accessor: "Department", variant: "highlight" },
-    { label: "Created", accessor: "created_at", variant: "date" },
-    { label: "Closed", accessor: "closed_at", variant: "status" },
+    { label: "Category", accessor: "Category", variant: "highlight" },
+    ...(isClosedFilter
+      ? [{ label: "Closed", accessor: "closed_at", variant: "date" }]
+      : [{ label: "Created", accessor: "created_at", variant: "date" }]),
+    {
+      label: "Actions",
+      variant: "action",
+      preventRowClick: true,
+      getLabel: (t) => (t?.closed_at ? "Reopen" : "Close"),
+      isPrimary: (t) => !!t?.closed_at,
+      onClick: (t) => toggleTicketStatus(t),
+    },
   ];
+
+  const toggleTicketStatus = async (ticket) => {
+    if (!ticket) return;
+    try {
+      showLoading();
+      const shouldReopen = !!ticket.closed_at;
+      const payload = shouldReopen
+        ? { status: "Open", closed_at: null }
+        : { status: "Closed", closed_at: new Date().toISOString() };
+
+      const { error: updErr } = await realtimeSupabase
+        .from("Tickets")
+        .update(payload)
+        .eq("id", ticket.id);
+
+      if (updErr) {
+        alert(updErr.message || "Failed to update ticket status");
+        return;
+      }
+      setRealtimeTick((n) => n + 1);
+    } finally {
+      hideLoading();
+    }
+  };
 
   const userId = useMemo(() => {
     try {
@@ -177,9 +216,9 @@ function Tickets() {
   }
 
   return (
-    <div className="flex-1 min-h-0 bg-gray-50 font-poppins md:h-screen md:overflow-hidden flex flex-col items-center md:justify-center p-4 md:p-0">
-      <div className="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border-t-[6px] border-lpu-maroon">
-        <div className="p-6 md:p-8">
+    <div className="h-full overflow-hidden bg-gray-50 font-poppins flex flex-col p-4 md:p-6">
+      <div className="w-full max-w-6xl mx-auto bg-white rounded-2xl shadow-xl overflow-hidden border-t-[6px] border-lpu-maroon flex-1 min-h-0 flex flex-col">
+        <div className="p-6 md:p-8 flex-1 min-h-0 flex flex-col">
           <h1 className="text-2xl md:text-3xl font-black text-lpu-maroon mb-4 tracking-tight">
             Ticket Dashboard
           </h1>
@@ -197,7 +236,7 @@ function Tickets() {
             />
           </div>
 
-          <div className="w-full rounded-xl border border-gray-100">
+          <div className="w-full flex-1 min-h-0 rounded-xl border border-gray-100 flex flex-col">
             <DataTable
               columns={columns}
               data={tickets}

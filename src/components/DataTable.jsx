@@ -103,7 +103,7 @@ export function TableSelect({
       </select>
       <ChevronDown
         size={16}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-all duration-200 group-focus-within:rotate-180 group-focus-within:text-lpu-gold"
+        className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-all duration-200 group-focus-within:rotate-180"
       />
     </div>
   );
@@ -226,21 +226,17 @@ export function DataTable({
 
         if (pillClassName) {
           return (
-            <div className="relative w-full">
-              <div
-                className={`h-9 flex items-center justify-between rounded-lg px-3 text-sm font-bold select-none ${pillClassName}`}
-              >
-                <span className="truncate">
-                  {displayValue || col.placeholder || "Select…"}
-                </span>
-                <span className="ml-2 text-[10px] opacity-60">▾</span>
-              </div>
+            <div
+              className="relative w-full h-9 group"
+              onClick={(e) => e.stopPropagation()}
+            >
               <select
-                className={`absolute inset-0 w-full h-9 opacity-0 cursor-pointer ${selectExtraClass}`}
+                className={`w-full h-full appearance-none pl-3 pr-8 rounded-lg text-sm font-bold outline-none transition-all duration-200 focus:ring-2 focus:ring-lpu-gold focus:border-lpu-gold cursor-pointer ${pillClassName} ${selectExtraClass}`}
                 value={value || ""}
                 onChange={(e) =>
                   col.onChange && col.onChange(row, e.target.value)
                 }
+                onClick={(e) => e.stopPropagation()}
               >
                 {col.placeholder && (
                   <option value="" disabled>
@@ -253,6 +249,10 @@ export function DataTable({
                   </option>
                 ))}
               </select>
+              <ChevronDown
+                size={16}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none transition-all duration-200 opacity-70 group-focus-within:rotate-180 group-focus-within:opacity-100"
+              />
             </div>
           );
         }
@@ -304,8 +304,8 @@ export function DataTable({
   };
 
   return (
-    <div className="w-full rounded-xl border border-gray-100 bg-white shadow-sm overflow-x-auto md:overflow-x-hidden">
-      <div className="min-w-200 md:min-w-full flex flex-col">
+    <div className="w-full h-full rounded-xl border border-gray-100 bg-white shadow-sm overflow-x-auto md:overflow-x-hidden flex flex-col">
+      <div className="min-w-325 md:min-w-full flex-1 min-h-0 flex flex-col">
         {/* HEADER TABLE */}
         <div className="w-full bg-lpu-maroon text-white rounded-t-xl pr-1 md:pr-2">
           <table className="w-full text-left border-collapse table-fixed">
@@ -332,7 +332,7 @@ export function DataTable({
         </div>
 
         {/* BODY TABLE */}
-        <div className="w-full max-h-150 overflow-y-auto overflow-x-hidden rounded-b-xl pb-2">
+        <div className="w-full flex-1 min-h-0 overflow-y-auto rounded-b-xl pb-2">
           <table className="w-full text-left border-collapse table-fixed">
             <colgroup>
               {columns.map((col, index) => (

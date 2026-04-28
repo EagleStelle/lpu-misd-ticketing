@@ -17,7 +17,7 @@ export const FilterSelect = ({ value, onChange, options }) => {
       </select>
       <ChevronDown
         size={16}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-all duration-200 group-focus-within:rotate-180 group-focus-within:text-lpu-gold"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-500 pointer-events-none transition-all duration-200 group-focus-within:rotate-180"
       />
     </div>
   );

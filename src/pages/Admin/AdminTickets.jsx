@@ -122,12 +122,12 @@ function AssigneeCell({
         </div>
       ))}
       {assigned.length < 3 && available.length > 0 && (
-        <div className="relative inline-block w-full">
+        <div className="relative inline-block w-full h-7 group">
           <select
             value={adding}
             onChange={(e) => handleSelect(e.target.value)}
             onClick={(e) => e.stopPropagation()}
-            className="w-full h-7 appearance-none pl-2.5 pr-6 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-500 outline-none focus:ring-2 focus:ring-lpu-gold focus:border-lpu-gold cursor-pointer"
+            className="w-full h-full appearance-none pl-2.5 pr-6 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-500 outline-none transition-all duration-200 focus:ring-2 focus:ring-lpu-gold focus:border-lpu-gold cursor-pointer"
           >
             <option value="" disabled>
               Add assignee…
@@ -140,7 +140,7 @@ function AssigneeCell({
           </select>
           <ChevronDown
             size={12}
-            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+            className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-all duration-200 group-focus-within:rotate-180"
           />
         </div>
       )}
@@ -513,41 +513,39 @@ export default function AdminTickets() {
   if (!isAdmin) return <Navigate to="/Tickets" replace />;
 
   return (
-    <div className="md:flex-1 md:overflow-y-auto">
-      <section className="w-full max-w-330 mx-auto px-6 py-4 md:py-6 font-[Poppins,Segoe_UI,Arial,sans-serif]">
-        <div className="flex flex-col md:flex-row gap-4 mb-4">
-          <FilterSelect
-            value={filter}
-            onChange={handleFilter}
-            options={["Open Tickets", "Closed Tickets"]}
-          />
-          <SearchInput
-            placeholder="Search tickets..."
-            onSearch={handleSearch}
+    <section className="w-full max-w-330 mx-auto px-6 py-4 md:py-6 font-[Poppins,Segoe_UI,Arial,sans-serif] h-full overflow-hidden flex flex-col">
+      <div className="flex flex-col md:flex-row gap-4 mb-4">
+        <FilterSelect
+          value={filter}
+          onChange={handleFilter}
+          options={["Open Tickets", "Closed Tickets"]}
+        />
+        <SearchInput
+          placeholder="Search tickets..."
+          onSearch={handleSearch}
+        />
+      </div>
+
+      {error ? (
+        <div className="bg-red-50 text-lpu-red p-4 rounded-xl font-semibold text-center border border-red-100">
+          {error}
+        </div>
+      ) : (
+        <div className="w-full flex-1 min-h-0 rounded-xl border border-gray-100 shadow-sm bg-white flex flex-col">
+          <DataTable
+            columns={adminColumns}
+            data={tickets}
+            onRowClick={(row) => navigate(`/admin/tickets/${row.id}`)}
+            emptyMessage="No tickets found."
+            emptySubMessage="Adjust your search or filter settings."
+            page={page}
+            pageCount={pageCount}
+            totalCount={totalCount}
+            onPrevPage={() => setPage((p) => Math.max(0, p - 1))}
+            onNextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
           />
         </div>
-
-        {error ? (
-          <div className="bg-red-50 text-lpu-red p-4 rounded-xl font-semibold text-center border border-red-100">
-            {error}
-          </div>
-        ) : (
-          <div className="w-full rounded-xl border border-gray-100 shadow-sm bg-white">
-            <DataTable
-              columns={adminColumns}
-              data={tickets}
-              onRowClick={(row) => navigate(`/admin/tickets/${row.id}`)}
-              emptyMessage="No tickets found."
-              emptySubMessage="Adjust your search or filter settings."
-              page={page}
-              pageCount={pageCount}
-              totalCount={totalCount}
-              onPrevPage={() => setPage((p) => Math.max(0, p - 1))}
-              onNextPage={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
-            />
-          </div>
-        )}
-      </section>
-    </div>
+      )}
+    </section>
   );
 }
