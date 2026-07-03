@@ -7,12 +7,14 @@
 #   dev      -> run backend + frontend (assumes already set up)
 #   backend  -> run backend only (dev)
 #   frontend -> run frontend only (dev)
-#   build    -> production build of frontend (-> dist/)
+#   build    -> production build of frontend (-> frontend/dist/)
 #   prod     -> full production: install (npm ci) + build + serve dist + backend (NODE_ENV=production)
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND_DIR="$ROOT/frontend"
+BACKEND_DIR="$ROOT/backend"
 cd "$ROOT"
 
 # Production-tunable ports.
@@ -59,19 +61,19 @@ install_deps() {
   if [ "$flag" = "ci" ]; then cmd="ci"; fi
 
   green "Installing frontend deps (npm $cmd)..."
-  if [ "$cmd" = "ci" ] && [ ! -f "$ROOT/package-lock.json" ]; then
-    yellow "No package-lock.json — falling back to npm install."
-    npm install
+  if [ "$cmd" = "ci" ] && [ ! -f "$FRONTEND_DIR/package-lock.json" ]; then
+    yellow "No frontend/package-lock.json - falling back to npm install."
+    (cd "$FRONTEND_DIR" && npm install)
   else
-    npm "$cmd"
+    (cd "$FRONTEND_DIR" && npm "$cmd")
   fi
 
   green "Installing backend deps (npm $cmd)..."
-  if [ "$cmd" = "ci" ] && [ ! -f "$ROOT/backend/package-lock.json" ]; then
+  if [ "$cmd" = "ci" ] && [ ! -f "$BACKEND_DIR/package-lock.json" ]; then
     yellow "No backend/package-lock.json — falling back to npm install."
-    (cd "$ROOT/backend" && npm install)
+    (cd "$BACKEND_DIR" && npm install)
   else
-    (cd "$ROOT/backend" && npm "$cmd")
+    (cd "$BACKEND_DIR" && npm "$cmd")
   fi
 }
 
@@ -81,26 +83,26 @@ install_deps() {
 # causing "Cannot find native binding" at runtime.
 clean_install() {
   yellow "Cleaning node_modules and lockfiles (cross-platform native binding fix)..."
-  rm -rf "$ROOT/node_modules" "$ROOT/package-lock.json"
-  rm -rf "$ROOT/backend/node_modules" "$ROOT/backend/package-lock.json"
+  rm -rf "$FRONTEND_DIR/node_modules" "$FRONTEND_DIR/package-lock.json"
+  rm -rf "$BACKEND_DIR/node_modules" "$BACKEND_DIR/package-lock.json"
 
   green "Reinstalling frontend deps (npm install)..."
-  npm install
+  (cd "$FRONTEND_DIR" && npm install)
   green "Reinstalling backend deps (npm install)..."
-  (cd "$ROOT/backend" && npm install)
+  (cd "$BACKEND_DIR" && npm install)
 }
 
 # Verify the platform-native Tailwind oxide binding actually loads.
 # Returns non-zero when node_modules was installed from a foreign-OS lockfile
 # and the native optional dep is missing (npm/cli#4828).
 oxide_ok() {
-  [ -d "$ROOT/node_modules/@tailwindcss/oxide" ] || return 1
-  node -e 'require("@tailwindcss/oxide")' >/dev/null 2>&1
+  [ -d "$FRONTEND_DIR/node_modules/@tailwindcss/oxide" ] || return 1
+  (cd "$FRONTEND_DIR" && node -e 'require("@tailwindcss/oxide")') >/dev/null 2>&1
 }
 
 # Self-heal: if the native binding is broken, wipe + reinstall automatically.
 ensure_native_bindings() {
-  if [ ! -d "$ROOT/node_modules" ]; then return 0; fi
+  if [ ! -d "$FRONTEND_DIR/node_modules" ]; then return 0; fi
   if oxide_ok; then return 0; fi
   yellow "Tailwind native binding missing/broken — auto-cleaning (npm/cli#4828)..."
   clean_install
@@ -119,20 +121,20 @@ setup() {
 
 run_backend() {
   green "Starting backend on :$BACK_PORT ..."
-  (cd "$ROOT/backend" && npm start)
+  (cd "$BACKEND_DIR" && npm start)
 }
 
 run_frontend() {
   green "Starting frontend (Vite) ..."
-  npm run dev -- --host
+  (cd "$FRONTEND_DIR" && npm run dev -- --host)
 }
 
 run_dev() {
   # Run both; kill both on Ctrl-C.
   green "Starting backend + frontend (Ctrl-C to stop both)..."
-  (cd "$ROOT/backend" && npm start) &
+  (cd "$BACKEND_DIR" && npm start) &
   BACK_PID=$!
-  npm run dev -- --host &
+  (cd "$FRONTEND_DIR" && npm run dev -- --host) &
   FRONT_PID=$!
   trap 'kill $BACK_PID $FRONT_PID 2>/dev/null || true' INT TERM EXIT
   wait
@@ -146,21 +148,21 @@ run_prod() {
   ensure_native_bindings
 
   green "Building frontend (production)..."
-  npm run build
+  (cd "$FRONTEND_DIR" && npm run build)
 
-  if [ ! -d "$ROOT/dist" ]; then
-    red "Build produced no dist/ — aborting."
+  if [ ! -d "$FRONTEND_DIR/dist" ]; then
+    red "Build produced no frontend/dist/ - aborting."
     exit 1
   fi
 
   green "Starting production: backend :$BACK_PORT + static frontend :$FRONT_PORT (Ctrl-C to stop both)..."
 
   # Backend in production mode.
-  (cd "$ROOT/backend" && NODE_ENV=production PORT="$BACK_PORT" npm start) &
+  (cd "$BACKEND_DIR" && NODE_ENV=production PORT="$BACK_PORT" npm start) &
   BACK_PID=$!
 
   # Serve built dist. vite preview serves the production build as-is.
-  npm run preview -- --host --port "$FRONT_PORT" &
+  (cd "$FRONTEND_DIR" && npm run preview -- --host --port "$FRONT_PORT") &
   FRONT_PID=$!
 
   trap 'kill $BACK_PID $FRONT_PID 2>/dev/null || true' INT TERM EXIT
@@ -174,11 +176,11 @@ case "$CMD" in
   dev) check_node; ensure_native_bindings; run_dev ;;
   backend) check_node; run_backend ;;
   frontend) check_node; ensure_native_bindings; run_frontend ;;
-  build) check_node; ensure_native_bindings; npm run build ;;
+  build) check_node; ensure_native_bindings; (cd "$FRONTEND_DIR" && npm run build) ;;
   prod) run_prod ;;
   "")
     # First run convenience: setup if deps missing, then dev.
-    if [ ! -d "$ROOT/node_modules" ] || [ ! -d "$ROOT/backend/node_modules" ]; then
+    if [ ! -d "$FRONTEND_DIR/node_modules" ] || [ ! -d "$BACKEND_DIR/node_modules" ]; then
       setup
     else
       scaffold_env

@@ -4,14 +4,15 @@
 !docker-compose.yml
 !.dockerignore
 
-!package.json
-!package-lock.json
-!index.html
-!vite.config.js
-!public/
-!public/**
-!src/
-!src/**
+!frontend/
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/vite.config.js
+!frontend/public/
+!frontend/public/**
+!frontend/src/
+!frontend/src/**
 
 !backend/
 !backend/package.json

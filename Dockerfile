@@ -5,14 +5,14 @@ ARG ALPINE_IMAGE=alpine:3.24
 
 FROM ${NODE_IMAGE} AS frontend-deps
 WORKDIR /app
-COPY package.json package-lock.json ./
+COPY frontend/package.json frontend/package-lock.json ./
 RUN npm ci --no-audit --no-fund
 
 FROM frontend-deps AS frontend-build
 WORKDIR /app
-COPY index.html vite.config.js ./
-COPY public ./public
-COPY src ./src
+COPY frontend/index.html frontend/vite.config.js ./
+COPY frontend/public ./public
+COPY frontend/src ./src
 RUN npm run build
 
 FROM ${NODE_IMAGE} AS backend-deps

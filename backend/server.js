@@ -25,8 +25,8 @@ const frontendIndexPath = path.join(frontendDistDir, "index.html");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
-const jsonBodyLimit = process.env.JSON_BODY_LIMIT || "1mb";
-const uploadJsonLimit = process.env.UPLOAD_JSON_LIMIT || "16mb";
+const STANDARD_REQUEST_BODY_LIMIT = "1mb";
+const ATTACHMENT_REQUEST_BODY_LIMIT = "16mb";
 app.set("trust proxy", 1);
 
 // Middleware
@@ -86,9 +86,9 @@ app.use(
     });
   }),
 );
-app.use("/api/tickets/upload", express.json({ limit: uploadJsonLimit }));
-app.use(express.json({ limit: jsonBodyLimit }));
-app.use(express.urlencoded({ extended: true, limit: jsonBodyLimit }));
+app.use("/api/tickets/upload", express.json({ limit: ATTACHMENT_REQUEST_BODY_LIMIT }));
+app.use(express.json({ limit: STANDARD_REQUEST_BODY_LIMIT }));
+app.use(express.urlencoded({ extended: true, limit: STANDARD_REQUEST_BODY_LIMIT }));
 
 // Rate limiting for auth endpoints (login / signup)
 const authLimiter = rateLimit({

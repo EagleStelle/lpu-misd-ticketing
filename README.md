@@ -15,12 +15,11 @@ LPU MISD Helpdesk is a ticketing and support application for MISD service reques
 
 ```text
 .
+|-- frontend/             # React/Vite app, static assets, frontend package
 |-- backend/              # Express API, routes, services, Supabase setup
-|-- public/               # Static frontend assets
-|-- src/                  # React application
 |-- Dockerfile            # Multi-stage production image
 |-- docker-compose.yml    # Single-service app deployment
-|-- package.json          # Frontend scripts/dependencies
+|-- run.sh                # Local setup/run helper
 `-- .env.example          # Root environment template
 ```
 
@@ -85,6 +84,7 @@ Notes:
 Install frontend dependencies:
 
 ```bash
+cd frontend
 npm install
 ```
 
@@ -111,6 +111,7 @@ npm start
 Start the frontend in another terminal:
 
 ```bash
+cd frontend
 npm run dev
 ```
 
@@ -227,6 +228,7 @@ Do not use `docker compose up --build` on a server that only has the deployment 
 Frontend scripts:
 
 ```bash
+cd frontend
 npm run dev
 npm run build
 npm run lint
@@ -246,8 +248,10 @@ npm run dev
 Before handing off or deploying changes:
 
 ```bash
+cd frontend
 npm run lint
 npm run build
+cd ..
 docker compose config --quiet
 docker compose build
 ```
@@ -255,7 +259,9 @@ docker compose build
 Optional dependency checks:
 
 ```bash
+cd frontend
 npm audit --omit=dev
+cd ..
 cd backend
 npm audit --omit=dev
 ```

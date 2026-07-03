@@ -19,10 +19,6 @@ import { DataTable, TableButton } from "../../components/DataTable";
 import { Modal } from "../../components/Modal";
 import { DateRangeFilter } from "../../components/DateRangeFilter";
 import { downloadCsv } from "../../utils/csvExport";
-import {
-  playNewTicketSound,
-  installAudioUnlock,
-} from "../../utils/notificationSound";
 
 const PAGE_SIZE = 10;
 

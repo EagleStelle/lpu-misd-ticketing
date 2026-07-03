@@ -1,4 +1,4 @@
-/* global Buffer, process */
+/* global Buffer */
 import express from "express";
 import sharp from "sharp";
 import { supabase } from "../config/database.js";
@@ -6,25 +6,12 @@ import { authMiddleware, adminMiddleware } from "../middleware/auth.js";
 import { logActivity } from "../services/activityService.js";
 
 const router = express.Router();
-const DEFAULT_MAX_UPLOAD_BYTES = 10 * 1024 * 1024;
-
-const parsePositiveInt = (value, fallback) => {
-  const parsed = Number.parseInt(value, 10);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
-};
-
-const maxUploadBytes = parsePositiveInt(
-  process.env.MAX_UPLOAD_BYTES,
-  DEFAULT_MAX_UPLOAD_BYTES,
-);
-const sharpLimitInputPixels = parsePositiveInt(
-  process.env.SHARP_LIMIT_INPUT_PIXELS,
-  40_000_000,
-);
-const sharpConcurrency = parsePositiveInt(process.env.SHARP_CONCURRENCY, 1);
+const MAX_ATTACHMENT_BYTES = 10 * 1024 * 1024;
+const IMAGE_INPUT_PIXEL_LIMIT = 40_000_000;
+const IMAGE_TRANSFORM_CONCURRENCY = 1;
 
 sharp.cache(false);
-sharp.concurrency(sharpConcurrency);
+sharp.concurrency(IMAGE_TRANSFORM_CONCURRENCY);
 
 // POST /api/tickets/upload — upload an attachment to Storage via service_role (bypasses RLS)
 router.post("/upload", authMiddleware, async (req, res) => {
@@ -38,18 +25,18 @@ router.post("/upload", authMiddleware, async (req, res) => {
     }
 
     const estimatedBytes = Math.floor((fileData.length * 3) / 4);
-    if (estimatedBytes > maxUploadBytes + 1024) {
+    if (estimatedBytes > MAX_ATTACHMENT_BYTES + 1024) {
       return res.status(413).json({
         success: false,
-        message: `File is too large. Max size is ${Math.floor(maxUploadBytes / 1024 / 1024)} MB.`,
+        message: `File is too large. Max size is ${Math.floor(MAX_ATTACHMENT_BYTES / 1024 / 1024)} MB.`,
       });
     }
 
     let buffer = Buffer.from(fileData, "base64");
-    if (buffer.byteLength > maxUploadBytes) {
+    if (buffer.byteLength > MAX_ATTACHMENT_BYTES) {
       return res.status(413).json({
         success: false,
-        message: `File is too large. Max size is ${Math.floor(maxUploadBytes / 1024 / 1024)} MB.`,
+        message: `File is too large. Max size is ${Math.floor(MAX_ATTACHMENT_BYTES / 1024 / 1024)} MB.`,
       });
     }
 
@@ -60,7 +47,7 @@ router.post("/upload", authMiddleware, async (req, res) => {
       uploadType.startsWith("image/") && uploadType !== "image/svg+xml";
 
     if (isRasterImage) {
-      buffer = await sharp(buffer, { limitInputPixels: sharpLimitInputPixels })
+      buffer = await sharp(buffer, { limitInputPixels: IMAGE_INPUT_PIXEL_LIMIT })
         .resize({ width: 1280, height: 1280, fit: "inside", withoutEnlargement: true })
         .webp({ quality: 82 })
         .toBuffer();
