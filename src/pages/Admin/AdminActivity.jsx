@@ -7,6 +7,7 @@ import { DateRangeFilter } from "../../components/DateRangeFilter";
 import { DataTable } from "../../components/DataTable";
 import { NavbarActionButton } from "../../context/NavbarActionsContext";
 import { useNavbarActions } from "../../context/useNavbarActions";
+import { downloadCsv } from "../../utils/csvExport";
 
 const PAGE_SIZE = 20;
 
@@ -228,14 +229,6 @@ function formatTargetText(row) {
     .join("");
 }
 
-function escapeCsv(value) {
-  const s = String(value ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-    return `"${s.replaceAll('"', '""')}"`;
-  }
-  return s;
-}
-
 export default function AdminActivity() {
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState("");
@@ -332,18 +325,11 @@ export default function AdminActivity() {
         return [...friendly, ...raw];
       });
 
-      const csv = [headers, ...rows]
-        .map((row) => row.map(escapeCsv).join(","))
-        .join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `activity-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadCsv(
+        `activity-export-${new Date().toISOString().slice(0, 10)}.csv`,
+        headers,
+        rows,
+      );
     } catch {
       // silently ignore export errors
     }

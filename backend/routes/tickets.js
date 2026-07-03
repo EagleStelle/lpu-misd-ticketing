@@ -425,30 +425,65 @@ router.patch("/:id/assignees", adminMiddleware, async (req, res) => {
     const { Assignee1, Assignee2, Assignee3 } = req.body;
     const callerId = req.user?.id;
     const isTicketAdmin = Number(req.user?.admin_level) === 1;
+    const nextAssignees = {
+      Assignee1: Assignee1 || null,
+      Assignee2: Assignee2 || null,
+      Assignee3: Assignee3 || null,
+    };
+    const requestedAssignees = [
+      nextAssignees.Assignee1,
+      nextAssignees.Assignee2,
+      nextAssignees.Assignee3,
+    ].filter(Boolean);
 
-    if (isTicketAdmin) {
-      const assignees = [Assignee1, Assignee2, Assignee3].filter(Boolean);
-      if (assignees.some((id) => id !== callerId)) {
-        return res.status(403).json({
-          success: false,
-          message: "Ticket admins can only assign tickets to themselves",
-        });
-      }
+    if (new Set(requestedAssignees).size !== requestedAssignees.length) {
+      return res.status(400).json({
+        success: false,
+        message: "Duplicate assignees are not allowed",
+      });
     }
 
-    const { data: oldTicket } = await supabase
+    const { data: oldTicket, error: oldTicketError } = await supabase
       .from("Tickets")
       .select("Assignee1, Assignee2, Assignee3")
       .eq("id", ticketId)
       .single();
 
+    if (oldTicketError) {
+      if (oldTicketError.code === "PGRST116") {
+        return res
+          .status(404)
+          .json({ success: false, message: "Ticket not found" });
+      }
+      return res
+        .status(400)
+        .json({ success: false, message: oldTicketError.message });
+    }
+
+    if (isTicketAdmin) {
+      const currentOtherAssignees = [
+        oldTicket?.Assignee1,
+        oldTicket?.Assignee2,
+        oldTicket?.Assignee3,
+      ].filter((id) => id && id !== callerId);
+      const requestedOtherAssignees = requestedAssignees.filter(
+        (id) => id !== callerId,
+      );
+      const sameAssigneeSet =
+        currentOtherAssignees.length === requestedOtherAssignees.length &&
+        currentOtherAssignees.every((id) => requestedOtherAssignees.includes(id));
+
+      if (!sameAssigneeSet) {
+        return res.status(403).json({
+          success: false,
+          message: "Ticket admins can only add or remove themselves as assignee",
+        });
+      }
+    }
+
     const { data, error } = await supabase
       .from("Tickets")
-      .update({
-        Assignee1: Assignee1 ?? null,
-        Assignee2: Assignee2 ?? null,
-        Assignee3: Assignee3 ?? null,
-      })
+      .update(nextAssignees)
       .eq("id", ticketId)
       .select();
 
@@ -462,7 +497,7 @@ router.patch("/:id/assignees", adminMiddleware, async (req, res) => {
 
     const adminId = req.user.id || req.user.sub;
     const oldAssignees = new Set([oldTicket?.Assignee1, oldTicket?.Assignee2, oldTicket?.Assignee3].filter(Boolean));
-    const newAssignees = [Assignee1, Assignee2, Assignee3].filter(Boolean);
+    const newAssignees = requestedAssignees;
     const addedAssignees = newAssignees.filter((id) => !oldAssignees.has(id));
 
     if (addedAssignees.length > 0) {

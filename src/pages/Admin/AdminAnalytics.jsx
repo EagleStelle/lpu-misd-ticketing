@@ -23,6 +23,7 @@ import { useLoading } from "../../context/useLoading";
 import { NavbarActionButton } from "../../context/NavbarActionsContext";
 import { useNavbarActions } from "../../context/useNavbarActions";
 import { isGlobalAdmin } from "../../utils/adminLevels";
+import { downloadCsv } from "../../utils/csvExport";
 
 const ALL_DEPARTMENTS = [
   "CAS",
@@ -99,14 +100,6 @@ function durationMinutesFromSeconds(seconds) {
 function formatMinutesOneDecimal(m) {
   if (m == null || Number.isNaN(m)) return "—";
   return `${m.toFixed(1)} min`;
-}
-
-function escapeCsv(value) {
-  const next = String(value ?? "");
-  if (next.includes(",") || next.includes('"') || next.includes("\n")) {
-    return `"${next.replaceAll('"', '""')}"`;
-  }
-  return next;
 }
 
 function normalizeAnalyticsCategory(raw) {
@@ -1310,18 +1303,11 @@ export default function AdminAnalytics() {
       const rows = list.map((row) =>
         headers.map((key) => formatCell(key, row[key])),
       );
-      const csv = [headers, ...rows]
-        .map((row) => row.map(escapeCsv).join(","))
-        .join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `tickets-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadCsv(
+        `tickets-export-${new Date().toISOString().slice(0, 10)}.csv`,
+        headers,
+        rows,
+      );
     } finally {
       hideLoading();
     }
