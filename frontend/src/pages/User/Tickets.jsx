@@ -281,6 +281,15 @@ function Tickets() {
         const { data, error: supaError, count } = await q;
 
         if (supaError) {
+          // Requested range past the last row (page no longer valid after
+          // tickets closed/deleted). Reset to first page and refetch.
+          if (
+            (supaError.code === "PGRST103" || supaError.status === 416) &&
+            page > 0
+          ) {
+            setPage(0);
+            return;
+          }
           setError(supaError.message || "Failed to load tickets");
         } else {
           const fetched = data || [];
