@@ -13,6 +13,7 @@ export default function TicketDetails({
   formatDateTime,
 }) {
   const statusText = ticket?.status || "Open";
+  const ticketSummary = ticket?.Summary || ticket?.summary || "N/A";
   const [now, setNow] = useState(null);
 
   useEffect(() => {
@@ -275,10 +276,18 @@ export default function TicketDetails({
 
       {/* Summary Section */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out bg-gray-50/50 dark:!bg-zinc-950/30 ${expandedSummary ? "max-h-40 border-t border-gray-100 dark:border-zinc-800" : "max-h-0"
+        className={`transition-all duration-300 ease-in-out bg-gray-50/50 dark:!bg-zinc-950/30 ${expandedSummary ? "max-h-none overflow-visible border-t border-gray-100 dark:border-zinc-800" : "max-h-0 overflow-hidden"
           }`}
       >
         <div className="p-5 grid grid-cols-2 md:grid-cols-4 gap-6 bg-white/50 dark:!bg-zinc-900/50">
+          <div className="col-span-2 md:col-span-4 flex flex-col gap-1">
+            <span className="text-[10px] font-bold text-lpu-maroon/60 dark:text-lpu-gold/60 uppercase tracking-widest">
+              Summary
+            </span>
+            <span className="text-sm text-gray-900 dark:text-zinc-100 font-semibold whitespace-pre-wrap break-words">
+              {ticketSummary}
+            </span>
+          </div>
           <div className="flex flex-col gap-1">
             <span className="text-[10px] font-bold text-lpu-maroon/60 dark:text-lpu-gold/60 uppercase tracking-widest">
               Type
