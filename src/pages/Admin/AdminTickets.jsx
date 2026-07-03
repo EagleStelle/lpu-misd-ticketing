@@ -18,6 +18,7 @@ import { FilterSelect, SearchInput } from "../../components/Controls";
 import { DataTable, TableButton } from "../../components/DataTable";
 import { Modal } from "../../components/Modal";
 import { DateRangeFilter } from "../../components/DateRangeFilter";
+import { downloadCsv } from "../../utils/csvExport";
 import {
   playNewTicketSound,
   installAudioUnlock,
@@ -27,14 +28,6 @@ const PAGE_SIZE = 10;
 
 function isClosed(ticket) {
   return !!ticket?.closed_at;
-}
-
-function escapeCsv(value) {
-  const next = String(value ?? "");
-  if (next.includes(",") || next.includes('"') || next.includes("\n")) {
-    return `"${next.replaceAll('"', '""')}"`;
-  }
-  return next;
 }
 
 function getTicketPriority(ticket) {
@@ -385,18 +378,11 @@ export default function AdminTickets() {
       const rows = list.map((row) =>
         headers.map((key) => formatCell(key, row[key])),
       );
-      const csv = [headers, ...rows]
-        .map((row) => row.map(escapeCsv).join(","))
-        .join("\n");
-      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `tickets-export-${new Date().toISOString().slice(0, 10)}.csv`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
+      downloadCsv(
+        `tickets-export-${new Date().toISOString().slice(0, 10)}.csv`,
+        headers,
+        rows,
+      );
     } finally {
       hideLoading();
     }

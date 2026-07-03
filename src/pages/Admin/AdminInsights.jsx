@@ -18,18 +18,13 @@ import { getApiBaseUrl } from "../../utils/apiBaseUrl";
 import { useLoading } from "../../context/useLoading";
 import { NavbarActionButton } from "../../context/NavbarActionsContext";
 import { useNavbarActions } from "../../context/useNavbarActions";
+import { downloadCsv } from "../../utils/csvExport";
 
 function getAuthHeader() {
   return { Authorization: `Bearer ${localStorage.getItem("authToken") || ""}` };
 }
 function apiUrl(path) {
   return `${getApiBaseUrl()}${path}`;
-}
-function escapeCsv(value) {
-  const s = String(value ?? "");
-  if (s.includes(",") || s.includes('"') || s.includes("\n"))
-    return `"${s.replaceAll('"', '""')}"`;
-  return s;
 }
 function getAdminLevel() {
   try {
@@ -828,18 +823,7 @@ export default function AdminAIAnalytics() {
 
     const periodLabel =
       periodType === "custom" ? `${customStart}_${customEnd}` : periodKey;
-    const csv = [headers, ...rows]
-      .map((r) => r.map(escapeCsv).join(","))
-      .join("\n");
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = `insights-${periodType}-${periodLabel}.csv`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
+    downloadCsv(`insights-${periodType}-${periodLabel}.csv`, headers, rows);
   };
 
   useNavbarActions(
