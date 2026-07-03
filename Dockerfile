@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.7
 
 ARG NODE_IMAGE=node:22-alpine
+ARG ALPINE_IMAGE=alpine:3.24
 
 FROM ${NODE_IMAGE} AS frontend-deps
 WORKDIR /app
@@ -18,13 +19,20 @@ FROM ${NODE_IMAGE} AS backend-deps
 WORKDIR /app
 ENV NODE_ENV=production
 COPY backend/package.json backend/package-lock.json ./
-RUN npm ci --omit=dev --no-audit --no-fund && npm cache clean --force
+RUN npm ci --omit=dev --no-audit --no-fund \
+    && rm -rf node_modules/@img/sharp-linux-x64 node_modules/@img/sharp-libvips-linux-x64 \
+    && npm cache clean --force
 
-FROM ${NODE_IMAGE} AS app
+FROM ${ALPINE_IMAGE} AS app
+RUN apk add --no-cache ca-certificates libstdc++ \
+    && addgroup -g 1000 node \
+    && adduser -D -u 1000 -G node node
 WORKDIR /app
 ENV NODE_ENV=production \
+    NODE_OPTIONS=--max-old-space-size=256 \
     PORT=5000 \
     FRONTEND_DIST_DIR=/app/public
+COPY --from=backend-deps /usr/local/bin/node /usr/local/bin/node
 COPY --from=backend-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=frontend-build --chown=node:node /app/dist ./public
 COPY --chown=node:node backend/package.json backend/package-lock.json ./

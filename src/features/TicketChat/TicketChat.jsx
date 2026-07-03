@@ -594,9 +594,9 @@ export default function TicketChat({ adminView = false } = {}) {
     let uploadedAttachments = [];
     if (filesToSend.length > 0) {
       try {
-        uploadedAttachments = await Promise.all(
-          filesToSend.map((file) => uploadAttachment(file)),
-        );
+        for (const file of filesToSend) {
+          uploadedAttachments.push(await uploadAttachment(file));
+        }
       } catch (err) {
         console.error("Attachment upload failed:", err);
         alert(err.message || "Failed to upload attachment(s)");

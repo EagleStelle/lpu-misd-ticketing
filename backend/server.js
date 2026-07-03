@@ -2,7 +2,6 @@
 import "./config/env.js";
 import express from "express";
 import cors from "cors";
-import bodyParser from "body-parser";
 import rateLimit from "express-rate-limit";
 import fs from "fs";
 import path from "path";
@@ -26,6 +25,8 @@ const frontendIndexPath = path.join(frontendDistDir, "index.html");
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const jsonBodyLimit = process.env.JSON_BODY_LIMIT || "1mb";
+const uploadJsonLimit = process.env.UPLOAD_JSON_LIMIT || "16mb";
 app.set("trust proxy", 1);
 
 // Middleware
@@ -85,8 +86,9 @@ app.use(
     });
   }),
 );
-app.use(bodyParser.json({ limit: "20mb" }));
-app.use(bodyParser.urlencoded({ extended: true, limit: "20mb" }));
+app.use("/api/tickets/upload", express.json({ limit: uploadJsonLimit }));
+app.use(express.json({ limit: jsonBodyLimit }));
+app.use(express.urlencoded({ extended: true, limit: jsonBodyLimit }));
 
 // Rate limiting for auth endpoints (login / signup)
 const authLimiter = rateLimit({
