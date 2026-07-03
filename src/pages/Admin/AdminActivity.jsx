@@ -67,8 +67,8 @@ const ACTION_META = {
     color:
       "bg-green-100 text-green-800 border-green-200 dark:bg-green-900/25 dark:text-green-400 dark:border-green-700/40",
   },
-  ADMIN_LEVEL_CHANGED: {
-    label: "Changed Admin Level",
+  ADMIN_LEVEL: {
+    label: "Admin Level",
     color:
       "bg-purple-50 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400 dark:border-purple-700/30",
   },
@@ -153,7 +153,9 @@ function formatTargetParts(row) {
   const label = row.target_label || "";
   const id = row.target_id || "";
 
-  const ticketNo = String(label || id).replace(/^#/, "").trim();
+  const ticketNo = String(label || id)
+    .replace(/^#/, "")
+    .trim();
 
   switch (row.action_type) {
     case "TICKET_CLOSED":
@@ -189,7 +191,7 @@ function formatTargetParts(row) {
       return ["Enabled admin ", { b: label }];
     case "ADMIN_DISABLED":
       return ["Disabled admin ", { b: label }];
-    case "ADMIN_LEVEL_CHANGED": {
+    case "ADMIN_LEVEL": {
       const [name, lvl] = label.split(", set to ");
       if (name && lvl)
         return ["Changed access level for ", { b: name }, " to ", { b: lvl }];
@@ -205,7 +207,9 @@ function formatTargetParts(row) {
       return ["Bulk deleted knowledge article ", { b: label || "untitled" }];
     case "PROFILE_NAME_CHANGED": {
       const name = label.replace(/^Full name changed to /, "");
-      return name ? ["Changed full name to ", { b: name }] : ["Changed full name"];
+      return name
+        ? ["Changed full name to ", { b: name }]
+        : ["Changed full name"];
     }
     case "PROFILE_EMAIL_CHANGED": {
       const email = label.replace(/^Email changed to /, "");
@@ -365,8 +369,7 @@ export default function AdminActivity() {
     if (isGlobal) {
       cols.push({
         label: "Performed By",
-        accessor: (row) =>
-          getPerformedByLabel(row) || "Unknown",
+        accessor: (row) => getPerformedByLabel(row) || "Unknown",
         variant: "title",
         colWidth: "w-44",
         render: (row) => {
