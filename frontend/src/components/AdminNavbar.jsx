@@ -9,9 +9,13 @@ import {
   BookOpen,
   Settings,
   User,
+  Users,
+  SlidersHorizontal,
   ChevronDown,
   LogOut,
   Activity,
+  Moon,
+  Sun,
 } from "lucide-react";
 import lpuLogo from "../assets/lpul-logo.png";
 import { SettingsModal } from "./Modal";
@@ -25,6 +29,8 @@ const AdminDropdown = ({
   setAccountModalOpen,
   setIsMobileMenuOpen,
   onLogout,
+  darkMode,
+  onToggleDark,
 }) => (
   <div className="relative flex items-center h-8" ref={innerRef}>
     <button
@@ -48,6 +54,15 @@ const AdminDropdown = ({
     {/* Popup Menu */}
     {menuOpen && (
       <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 mt-2 top-full w-48 bg-white dark:bg-zinc-900 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-zinc-800 flex flex-col z-50 animate-in fade-in zoom-in-95 transition-colors duration-300">
+        <button
+          type="button"
+          onClick={onToggleDark}
+          className="flex items-center gap-3 px-4 py-2 text-sm font-medium text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-lpu-maroon dark:hover:text-lpu-gold transition-colors w-full text-left cursor-pointer"
+        >
+          {darkMode ? <Sun size={16} /> : <Moon size={16} />}{" "}
+          <span>{darkMode ? "Light Mode" : "Dark Mode"}</span>
+        </button>
+
         <button
           type="button"
           onClick={() => {
@@ -141,17 +156,86 @@ const AnalyticsDropdown = ({ open, setOpen, innerRef, onMobileClose }) => {
   );
 };
 
+// --- Manage Nav Dropdown (Global Admin only) ---
+const ManageDropdown = ({ open, setOpen, innerRef, onMobileClose }) => {
+  const location = useLocation();
+  const isActive =
+    location.pathname === "/admin/manage" ||
+    location.pathname === "/admin/configure";
+
+  const linkBase =
+    "flex items-center gap-2.5 px-3 py-2 text-sm font-medium rounded-lg transition-colors w-full text-left cursor-pointer";
+  const linkInactive =
+    "text-gray-700 dark:text-zinc-300 hover:bg-gray-50 dark:hover:bg-zinc-800 hover:text-lpu-maroon dark:hover:text-lpu-gold";
+  const linkActive =
+    "text-lpu-maroon dark:text-lpu-gold bg-lpu-maroon/5 dark:bg-lpu-maroon/20 font-semibold";
+
+  return (
+    <div className="relative flex items-center h-8" ref={innerRef}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        className={`flex items-center justify-center lg:justify-start gap-2 px-3 md:px-2 lg:px-3 h-8 rounded-lg text-sm font-medium transition-all duration-200 cursor-pointer ${
+          isActive || open
+            ? "bg-lpu-red text-white shadow-sm font-bold"
+            : "text-white/85 hover:bg-lpu-gold hover:text-lpu-maroon"
+        }`}
+      >
+        <Settings size={16} />
+        <span className="hidden lg:inline">Manage</span>
+        <ChevronDown
+          size={14}
+          className={`transition-transform duration-200 ${open ? "rotate-180" : ""}`}
+        />
+      </button>
+
+      {open && (
+        <div className="absolute left-1/2 -translate-x-1/2 md:left-auto md:right-0 md:translate-x-0 mt-2 top-full w-44 bg-white dark:bg-zinc-900 rounded-xl shadow-xl py-2 border border-gray-100 dark:border-zinc-800 flex flex-col z-50 animate-in fade-in zoom-in-95 transition-colors duration-300">
+          <NavLink
+            to="/admin/manage"
+            onClick={() => {
+              setOpen(false);
+              onMobileClose?.();
+            }}
+            className={({ isActive: a }) =>
+              `${linkBase} ${a ? linkActive : linkInactive}`
+            }
+          >
+            <Users size={15} />
+            <span>Accounts</span>
+          </NavLink>
+          <NavLink
+            to="/admin/configure"
+            onClick={() => {
+              setOpen(false);
+              onMobileClose?.();
+            }}
+            className={({ isActive: a }) =>
+              `${linkBase} ${a ? linkActive : linkInactive}`
+            }
+          >
+            <SlidersHorizontal size={15} />
+            <span>Configure</span>
+          </NavLink>
+        </div>
+      )}
+    </div>
+  );
+};
+
 export default function AdminNavbar() {
   const { actions = null, isRoot } = useNavbarActionsContext();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
+  const [manageOpen, setManageOpen] = useState(false);
   const [accountModalOpen, setAccountModalOpen] = useState(false);
 
   const desktopMenuRef = useRef(null);
   const mobileMenuRef = useRef(null);
   const analyticsDesktopRef = useRef(null);
   const analyticsMobileRef = useRef(null);
+  const manageDesktopRef = useRef(null);
 
   // --- Global Dark Mode Logic ---
   const [darkMode, setDarkMode] = useState(
@@ -182,10 +266,15 @@ export default function AdminNavbar() {
           setAnalyticsOpen(false);
         }
       }
+      if (manageOpen) {
+        if (!manageDesktopRef.current?.contains(e.target)) {
+          setManageOpen(false);
+        }
+      }
     };
     document.addEventListener("mousedown", onDocClick);
     return () => document.removeEventListener("mousedown", onDocClick);
-  }, [menuOpen, analyticsOpen]);
+  }, [menuOpen, analyticsOpen, manageOpen]);
 
   // --- Global Logout Logic ---
   const onLogout = () => {
@@ -194,6 +283,7 @@ export default function AdminNavbar() {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("userEmail");
     localStorage.removeItem("userRole");
+    localStorage.removeItem("adminLevel");
     window.location.href = "/";
   };
 
@@ -242,10 +332,11 @@ export default function AdminNavbar() {
               <span className="hidden lg:inline">Activity</span>
             </NavLink>
             {isRoot && (
-              <NavLink to="/admin/manage" className={getLinkClass}>
-                <Settings size={16} />
-                <span className="hidden lg:inline">Manage</span>
-              </NavLink>
+              <ManageDropdown
+                open={manageOpen}
+                setOpen={setManageOpen}
+                innerRef={manageDesktopRef}
+              />
             )}
           </nav>
 
@@ -259,6 +350,8 @@ export default function AdminNavbar() {
               setAccountModalOpen={setAccountModalOpen}
               setIsMobileMenuOpen={setIsMobileMenuOpen}
               onLogout={onLogout}
+              darkMode={darkMode}
+              onToggleDark={() => setDarkMode((v) => !v)}
             />
           </div>
 
@@ -317,14 +410,24 @@ export default function AdminNavbar() {
                 <span>Activity</span>
               </NavLink>
               {isRoot && (
-                <NavLink
-                  to="/admin/manage"
-                  onClick={toggleMenu}
-                  className={getLinkClass}
-                >
-                  <Settings size={16} />
-                  <span>Manage</span>
-                </NavLink>
+                <>
+                  <NavLink
+                    to="/admin/manage"
+                    onClick={toggleMenu}
+                    className={getLinkClass}
+                  >
+                    <Users size={16} />
+                    <span>Accounts</span>
+                  </NavLink>
+                  <NavLink
+                    to="/admin/configure"
+                    onClick={toggleMenu}
+                    className={getLinkClass}
+                  >
+                    <SlidersHorizontal size={16} />
+                    <span>Configure</span>
+                  </NavLink>
+                </>
               )}
             </nav>
 
@@ -338,6 +441,8 @@ export default function AdminNavbar() {
                 setAccountModalOpen={setAccountModalOpen}
                 setIsMobileMenuOpen={setIsMobileMenuOpen}
                 onLogout={onLogout}
+                darkMode={darkMode}
+                onToggleDark={() => setDarkMode((v) => !v)}
               />
             </div>
           </div>
@@ -347,8 +452,6 @@ export default function AdminNavbar() {
       <SettingsModal
         open={accountModalOpen}
         onClose={() => setAccountModalOpen(false)}
-        darkMode={darkMode}
-        onToggleDark={() => setDarkMode((v) => !v)}
       />
     </>
   );

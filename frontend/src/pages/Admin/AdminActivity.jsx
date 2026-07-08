@@ -92,6 +92,21 @@ const ACTION_META = {
     color:
       "bg-sky-50 text-sky-700 border-sky-200 dark:bg-sky-900/20 dark:text-sky-400 dark:border-sky-700/30",
   },
+  ADMIN_CONFIG_ADDED: {
+    label: "Added Option",
+    color:
+      "bg-teal-50 text-teal-700 border-teal-200 dark:bg-teal-900/20 dark:text-teal-400 dark:border-teal-700/30",
+  },
+  ADMIN_CONFIG_EDITED: {
+    label: "Edited Option",
+    color:
+      "bg-yellow-50 text-yellow-700 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-700/30",
+  },
+  ADMIN_CONFIG_DELETED: {
+    label: "Deleted Option",
+    color:
+      "bg-red-50 text-red-700 border-red-200 dark:bg-red-900/20 dark:text-red-400 dark:border-red-700/30",
+  },
 };
 
 const FILTER_OPTIONS = [
@@ -221,6 +236,18 @@ function formatTargetParts(row) {
       const m = label.match(/^(.*?)(\d+ tickets?) for (.+)$/);
       if (m) return [m[1], { b: m[2] }, " for ", { b: m[3] }];
       return [label || "Ran AI analysis"];
+    }
+    case "ADMIN_CONFIG_ADDED":
+      return ["Added ", { b: meta.name || label }, ` ${meta.type || "option"}`];
+    case "ADMIN_CONFIG_DELETED":
+      return ["Removed ", { b: meta.name || label }, ` ${meta.type || "option"}`];
+    case "ADMIN_CONFIG_EDITED": {
+      const verb = (meta.verb || "Edited").toLowerCase();
+      return [
+        `${verb.charAt(0).toUpperCase()}${verb.slice(1)} `,
+        { b: meta.name || label },
+        ` ${meta.type || "option"}`,
+      ];
     }
     default:
       return [label || id || "No details"];

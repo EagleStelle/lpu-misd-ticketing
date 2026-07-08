@@ -118,6 +118,7 @@ const SidePanel = ({ collapsed, onToggleCollapse, onAccountMenuChange }) => {
     localStorage.removeItem("userFullName");
     localStorage.removeItem("userType");
     localStorage.removeItem("userDepartment");
+    localStorage.removeItem("adminLevel");
     navigate("/");
   };
 

@@ -5,10 +5,7 @@ import {
   Settings,
   User,
   Lock,
-  Palette,
   X,
-  Moon,
-  Sun,
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { getApiBaseUrl } from "../utils/apiBaseUrl";
@@ -364,6 +361,8 @@ function ProfileSection({ loading, loadErr, profile, setProfile, onClose }) {
       if (json.user?.email) localStorage.setItem("userEmail", json.user.email);
       if (json.user?.full_name !== undefined)
         localStorage.setItem("userFullName", json.user.full_name || "");
+      if (json.user?.admin_level !== undefined && json.user?.admin_level !== null)
+        localStorage.setItem("adminLevel", String(json.user.admin_level));
       if (json.token) {
         localStorage.setItem("authToken", json.token);
         realtimeSupabase.realtime.setAuth(json.token);
@@ -514,40 +513,9 @@ function SecuritySection() {
   );
 }
 
-function AppearanceSection({ darkMode, onToggleDark }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <div className="flex items-center justify-between p-3 rounded-xl border border-gray-100 dark:border-[#2b2b2f] hover:border-gray-200 dark:hover:border-zinc-500 transition-colors">
-        <div className="flex items-center gap-3">
-          {darkMode ? (
-            <Moon size={18} className="text-lpu-maroon" />
-          ) : (
-            <Sun size={18} className="text-lpu-maroon" />
-          )}
-          <p className="text-sm font-bold text-gray-800 dark:text-zinc-100">
-            Dark Mode
-          </p>
-        </div>
-        <label className="relative inline-flex items-center cursor-pointer">
-          <input
-            type="checkbox"
-            role="switch"
-            aria-checked={darkMode}
-            checked={darkMode}
-            onChange={onToggleDark}
-            className="sr-only peer"
-          />
-          <div className="relative w-11 h-6 rounded-full bg-zinc-300 dark:bg-zinc-600 peer-checked:bg-lpu-maroon dark:peer-checked:bg-lpu-maroon transition-colors duration-200 after:content-[''] after:absolute after:top-0.5 after:left-0.5 after:w-5 after:h-5 after:bg-white after:rounded-full after:shadow after:transition-transform after:duration-200 peer-checked:after:translate-x-5 cursor-pointer" />
-        </label>
-      </div>
-    </div>
-  );
-}
-
 const NAV_ITEMS = [
   { id: "account", icon: User, label: "Account" },
   { id: "security", icon: Lock, label: "Security" },
-  { id: "appearance", icon: Palette, label: "Appearance" },
 ];
 
 /**
@@ -556,10 +524,8 @@ const NAV_ITEMS = [
  * Props:
  *   open         – boolean
  *   onClose      – fn()
- *   darkMode     – boolean (current dark mode state)
- *   onToggleDark – fn() toggle dark mode
  */
-export function SettingsModal({ open, onClose, darkMode, onToggleDark }) {
+export function SettingsModal({ open, onClose }) {
   const [activeSection, setActiveSection] = useState("account");
   const [profile, setProfile] = useState({ fullName: "", email: "" });
   const [profileLoading, setProfileLoading] = useState(false);
@@ -584,6 +550,12 @@ export function SettingsModal({ open, onClose, darkMode, onToggleDark }) {
           fullName: json.user.full_name || "",
           email: json.user.email || "",
         });
+        if (json.user.admin_level !== undefined && json.user.admin_level !== null)
+          localStorage.setItem("adminLevel", String(json.user.admin_level));
+        if (json.token) {
+          localStorage.setItem("authToken", json.token);
+          realtimeSupabase.realtime.setAuth(json.token);
+        }
       } catch (e) {
         if (!cancelled)
           setProfileLoadErr(e.message || "Could not load profile");
@@ -661,12 +633,6 @@ export function SettingsModal({ open, onClose, darkMode, onToggleDark }) {
               />
             )}
             {activeSection === "security" && <SecuritySection />}
-            {activeSection === "appearance" && (
-              <AppearanceSection
-                darkMode={darkMode}
-                onToggleDark={onToggleDark}
-              />
-            )}
           </div>
         </div>
       </div>

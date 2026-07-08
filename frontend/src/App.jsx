@@ -11,11 +11,13 @@ import AdminLayout from "./layouts/AdminLayout";
 import AdminTickets from "./pages/Admin/AdminTickets";
 import AdminAnalytics from "./pages/Admin/AdminAnalytics";
 import AdminManage from "./pages/Admin/AdminManage";
+import AdminConfigure from "./pages/Admin/AdminConfigure";
 import AdminKnowledge from "./pages/Admin/AdminKnowledge";
 import AdminActivity from "./pages/Admin/AdminActivity";
 import AdminInsights from "./pages/Admin/AdminInsights";
 import LoadingScreen from "./components/LoadingScreen";
 import { useLoading } from "./context/useLoading";
+import { isGlobalAdmin } from "./utils/adminLevels";
 
 function getValidToken() {
   const token = localStorage.getItem("authToken");
@@ -29,10 +31,12 @@ function getValidToken() {
       localStorage.removeItem("userRole");
       localStorage.removeItem("userId");
       localStorage.removeItem("userEmail");
+      localStorage.removeItem("adminLevel");
       return null;
     }
     return decoded;
   } catch {
+    localStorage.removeItem("adminLevel");
     return null;
   }
 }
@@ -54,7 +58,7 @@ function RootRoute({ children }) {
   const decoded = getValidToken();
   if (!decoded) return <Navigate to="/" replace />;
   if (decoded.app_role !== "admin") return <Navigate to="/" replace />;
-  return decoded.admin_level === 0 ? (
+  return isGlobalAdmin(decoded.admin_level) ? (
     children
   ) : (
     <Navigate to="/admin/tickets" replace />
@@ -96,6 +100,14 @@ function App() {
             element={
               <RootRoute>
                 <AdminManage />
+              </RootRoute>
+            }
+          />
+          <Route
+            path="/admin/configure"
+            element={
+              <RootRoute>
+                <AdminConfigure />
               </RootRoute>
             }
           />

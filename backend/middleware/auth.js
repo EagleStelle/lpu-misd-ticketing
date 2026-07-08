@@ -1,4 +1,8 @@
-import { verifyToken, checkAdminActive } from "../services/authService.js";
+import {
+    verifyToken,
+    checkAdminActive,
+    checkAdminGlobal,
+} from "../services/authService.js";
 
 /**
  * Middleware to verify JWT token
@@ -63,8 +67,9 @@ export const adminMiddleware = (req, res, next) => {
  * Middleware to verify JWT AND require global admin (admin_level === 0).
  */
 export const globalAdminMiddleware = (req, res, next) => {
-    adminMiddleware(req, res, () => {
-        if (req.user?.admin_level !== 0) {
+    adminMiddleware(req, res, async () => {
+        const isGlobal = await checkAdminGlobal(req.user.id || req.user.sub);
+        if (!isGlobal) {
             return res.status(403).json({
                 success: false,
                 message: "Global admin access required",

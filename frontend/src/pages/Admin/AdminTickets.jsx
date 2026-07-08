@@ -183,7 +183,7 @@ export default function AdminTickets() {
       return null;
     }
   }, []);
-  const isGlobalAdmin = decoded?.admin_level === 0;
+  const isGlobalAdmin = Number(decoded?.admin_level) === 0;
 
   const [assignableAdmins, setAssignableAdmins] = useState([]);
   const [adminNameMap, setAdminNameMap] = useState({});

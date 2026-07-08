@@ -137,6 +137,16 @@ export const checkAdminActive = async (adminId) => {
     return data.is_active === true;
 };
 
+export const checkAdminGlobal = async (adminId) => {
+    const { data, error } = await supabase
+        .from("admin_users")
+        .select("is_active, admin_level")
+        .eq("id", adminId)
+        .single();
+    if (error || !data) return false;
+    return data.is_active === true && Number(data.admin_level) === 0;
+};
+
 /**
  * Verify JWT token
  */
@@ -398,7 +408,7 @@ export const getMeProfile = async (userId, appRole) => {
     try {
         const table = appRole === "admin" ? "admin_users" : "auth_users";
         const adminSelect =
-            "id, email, full_name, is_active, email_verified_at, created_at, updated_at";
+            "id, email, full_name, is_active, admin_level, email_verified_at, created_at, updated_at";
         const userSelect = "id, email, full_name, is_active, user_type, department, created_at, updated_at";
         const { data: user, error } = await supabase
             .from(table)
@@ -448,7 +458,7 @@ export const updateOwnAccountProfile = async (userId, appRole, { fullName, email
         }
 
         const selectFields = isAdmin
-            ? "id, email, full_name, is_active, email_verified_at, created_at, updated_at"
+            ? "id, email, full_name, is_active, admin_level, email_verified_at, created_at, updated_at"
             : "id, email, full_name, is_active, user_type, department, created_at, updated_at";
         const { data, error } = await supabase
             .from(table)

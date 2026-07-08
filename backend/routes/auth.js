@@ -128,7 +128,15 @@ router.get("/me", authMiddleware, async (req, res) => {
             return res.status(404).json(result);
         }
 
-        return res.status(200).json(result);
+        const adminLevel = appRole === "admin"
+            ? (result.user.admin_level ?? req.user.admin_level ?? 1)
+            : null;
+        const token = generateToken(result.user.id, result.user.email, appRole, adminLevel);
+
+        return res.status(200).json({
+            ...result,
+            token,
+        });
     } catch (error) {
         console.error("Error fetching user:", error);
         return res.status(500).json({
@@ -172,7 +180,9 @@ router.put("/me", authMiddleware, async (req, res) => {
             }
         }
 
-        const adminLevel = appRole === "admin" ? (req.user.admin_level ?? 1) : null;
+        const adminLevel = appRole === "admin"
+            ? (result.user.admin_level ?? req.user.admin_level ?? 1)
+            : null;
         const token = generateToken(result.user.id, result.user.email, appRole, adminLevel);
 
         return res.status(200).json({

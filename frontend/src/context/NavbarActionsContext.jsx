@@ -1,25 +1,74 @@
 import {
   useCallback,
+  useEffect,
   useMemo,
   useState,
 } from "react";
 import { jwtDecode } from "jwt-decode";
 import { isGlobalAdmin } from "../utils/adminLevels";
+import { getApiBaseUrl } from "../utils/apiBaseUrl";
 import {
   NavbarActionsGetContext,
   NavbarActionsSetContext,
 } from "./navbarActionsContextValue";
 
+function getTokenAdminLevel() {
+  const token = localStorage.getItem("authToken");
+  if (!token) return null;
+
+  try {
+    const decoded = jwtDecode(token);
+    if (decoded.exp * 1000 < Date.now() || decoded.app_role !== "admin") {
+      return null;
+    }
+    return decoded.admin_level ?? localStorage.getItem("adminLevel");
+  } catch {
+    return null;
+  }
+}
+
 export function NavbarActionsProvider({ children }) {
   const [actions, setActions] = useState(null);
+  const [isRoot, setIsRoot] = useState(() =>
+    isGlobalAdmin(getTokenAdminLevel()),
+  );
 
-  const isRoot = useMemo(() => {
-    try {
-      const decoded = jwtDecode(localStorage.getItem("authToken") || "");
-      return isGlobalAdmin(decoded?.admin_level ?? 1);
-    } catch {
-      return false;
-    }
+  useEffect(() => {
+    let cancelled = false;
+
+    const syncAdminLevel = async () => {
+      const token = localStorage.getItem("authToken");
+      const tokenLevel = getTokenAdminLevel();
+
+      setIsRoot(isGlobalAdmin(tokenLevel));
+      if (!token) return;
+
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/auth/me`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const json = await res.json();
+        if (cancelled || !json.success || !json.user) return;
+
+        if (json.token) {
+          localStorage.setItem("authToken", json.token);
+        }
+        if (
+          json.user.admin_level !== undefined &&
+          json.user.admin_level !== null
+        ) {
+          localStorage.setItem("adminLevel", String(json.user.admin_level));
+          setIsRoot(isGlobalAdmin(json.user.admin_level));
+        }
+      } catch {
+        if (!cancelled) setIsRoot(isGlobalAdmin(tokenLevel));
+      }
+    };
+
+    syncAdminLevel();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const stableSetActions = useCallback((a) => setActions(a), []);

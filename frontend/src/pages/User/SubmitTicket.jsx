@@ -34,6 +34,24 @@ function SubmitTicket() {
   const [attachments, setAttachments] = useState([]);
   const [successMessage, setSuccessMessage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [options, setOptions] = useState({ departments: [], categories: [] });
+
+  // Load configurable department + category options from the backend
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${getApiBaseUrl()}/api/ticket-options`, {
+          headers: {
+            Authorization: `Bearer ${localStorage.getItem("authToken") || ""}`,
+          },
+        });
+        const json = await res.json();
+        if (json.success && json.data) setOptions(json.data);
+      } catch {
+        // leave options empty on failure
+      }
+    })();
+  }, []);
 
   // When navigating to this page from the chatbot while already on it,
   // the component doesn't remount so useState initializer won't re-run.
@@ -75,7 +93,7 @@ function SubmitTicket() {
     const oversized = files.filter((f) => f.size > 10 * 1024 * 1024);
     if (oversized.length) {
       setErrorMessage(
-        `File(s) too large (max 10 MB): ${oversized.map((f) => f.name).join(", ")}`
+        `File(s) too large (max 10 MB): ${oversized.map((f) => f.name).join(", ")}`,
       );
       if (fileInputRef.current) fileInputRef.current.value = "";
       return;
@@ -103,11 +121,17 @@ function SubmitTicket() {
         "Content-Type": "application/json",
         Authorization: `Bearer ${localStorage.getItem("authToken")}`,
       },
-      body: JSON.stringify({ fileName: file.name, fileType: file.type, fileData }),
+      body: JSON.stringify({
+        fileName: file.name,
+        fileType: file.type,
+        fileData,
+      }),
     });
     const json = await res.json().catch(() => ({}));
     if (!res.ok || !json.success)
-      throw new Error(`Upload failed for ${file.name}: ${json.message || res.statusText}`);
+      throw new Error(
+        `Upload failed for ${file.name}: ${json.message || res.statusText}`,
+      );
 
     return {
       name: json.name,
@@ -228,13 +252,13 @@ function SubmitTicket() {
             Submit Ticket
           </h1>
           <p className="text-[0.85rem] text-[#666] my-4 lg:my-[clamp(8px,2vh,16px)]">
-            Create a ticket below and a technician will respond promptly to your
-            issue. You may also email directly to &nbsp;
+            Create a ticket below and a MIS representative will respond promptly
+            to your issue. You may also email directly to &nbsp;
             <a
-              href="mailto:help@lpul-mis.on.spiceworks.com"
+              href="mailto:misd@lpulaguna.edu.ph"
               className="text-lpu-maroon font-semibold hover:underline"
             >
-              help@lpul-mis.on.spiceworks.com
+              misd@lpulaguna.edu.ph
             </a>
           </p>
         </div>
@@ -244,10 +268,7 @@ function SubmitTicket() {
           <Alert type="error" message={errorMessage} />
         </div>
 
-        <form
-          onSubmit={handleSubmit}
-          className="flex flex-col"
-        >
+        <form onSubmit={handleSubmit} className="flex flex-col">
           <div className="overflow-y-auto overflow-x-hidden flex flex-col gap-4 pt-3 pb-2 px-2 max-h-[55vh] lg:max-h-[65vh]">
             <div className="flex flex-col gap-1">
               <FloatingInput
@@ -292,7 +313,7 @@ function SubmitTicket() {
                 name="department"
                 value={formData.department}
                 onChange={handleChange}
-                options={["CAS", "CBA", "CITHM", "COECS", "LPU-SC", "Highschool"]}
+                options={options.departments}
               />
 
               <FloatingSelect
@@ -300,15 +321,7 @@ function SubmitTicket() {
                 name="category"
                 value={formData.category}
                 onChange={handleChange}
-                options={[
-                  "ERP",
-                  "LMS",
-                  "Student Portal ",
-                  "Microsoft 365",
-                  "Hardware",
-                  "Software",
-                  "Others",
-                ]}
+                options={options.categories}
               />
 
               <FloatingSelect

@@ -73,6 +73,38 @@ CREATE POLICY admin_users_select ON admin_users FOR SELECT USING (
 );
 
 -- ============================================================
+-- ticket_options (configurable departments + categories)
+-- ============================================================
+CREATE TABLE IF NOT EXISTS ticket_options (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    type TEXT NOT NULL CHECK (type IN ('department', 'category')),
+    name TEXT NOT NULL,
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    is_active BOOLEAN NOT NULL DEFAULT true,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_ticket_options_type_name
+    ON ticket_options (type, lower(name));
+ALTER TABLE ticket_options ENABLE ROW LEVEL SECURITY;
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.ticket_options TO service_role;
+
+INSERT INTO ticket_options (type, name, sort_order) VALUES
+    ('department', 'CAS', 1),
+    ('department', 'CBA', 2),
+    ('department', 'CITHM', 3),
+    ('department', 'COECS', 4),
+    ('department', 'LPU-SC', 5),
+    ('department', 'Highschool', 6),
+    ('category', 'ERP', 1),
+    ('category', 'LMS', 2),
+    ('category', 'Student Portal', 3),
+    ('category', 'Microsoft 365', 4),
+    ('category', 'Hardware', 5),
+    ('category', 'Software', 6),
+    ('category', 'Others', 7)
+ON CONFLICT DO NOTHING;
+
+-- ============================================================
 -- Tickets
 -- ============================================================
 CREATE TABLE IF NOT EXISTS "Tickets" (

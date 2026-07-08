@@ -19,6 +19,7 @@ export default function AuthVerifyCallback({ mode }) {
       localStorage.removeItem("userId");
       localStorage.removeItem("userEmail");
       localStorage.removeItem("userFullName");
+      localStorage.removeItem("adminLevel");
 
       let done = false;
 
@@ -49,6 +50,7 @@ export default function AuthVerifyCallback({ mode }) {
           localStorage.setItem("userEmail", data.user.email);
           localStorage.setItem("userRole", "user");
           localStorage.setItem("userFullName", data.user?.full_name || "");
+          localStorage.removeItem("adminLevel");
           realtimeSupabase.realtime.setAuth(data.token);
 
           // Clear Supabase session locally only — avoids authFetch injecting stale

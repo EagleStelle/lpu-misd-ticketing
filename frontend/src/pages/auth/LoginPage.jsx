@@ -74,6 +74,7 @@ const LoginPage = () => {
     localStorage.setItem("userEmail", data.user.email);
     localStorage.setItem("userRole", "user");
     localStorage.setItem("userFullName", data.user?.full_name || "");
+    localStorage.removeItem("adminLevel");
     realtimeSupabase.realtime.setAuth(data.token);
 
     // Clear Supabase session locally only — avoids authFetch injecting a stale
@@ -178,6 +179,12 @@ const LoginPage = () => {
       localStorage.setItem("userId", data.user?.id || "");
       localStorage.setItem("userEmail", data.user?.email || email);
       localStorage.setItem("userRole", data.user?.role || "admin");
+      localStorage.setItem("userFullName", data.user?.full_name || "");
+      if (data.user?.admin_level !== undefined && data.user?.admin_level !== null) {
+        localStorage.setItem("adminLevel", String(data.user.admin_level));
+      } else {
+        localStorage.removeItem("adminLevel");
+      }
       navigate("/admin/tickets");
     } catch (err) {
       setError(err.message || "Login failed");

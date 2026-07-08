@@ -14,6 +14,7 @@ import ticketRoutes from "./routes/tickets.js";
 import chatbotRoutes from "./routes/chatbot.js";
 import knowledgeRoutes from "./routes/knowledge.js";
 import aiAnalyticsRoutes from "./routes/aiAnalytics.js";
+import ticketOptionsRoutes from "./routes/ticketOptions.js";
 import os from "os";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -135,6 +136,7 @@ app.use("/api/tickets", ticketRoutes);
 app.use("/api/chatbot", chatbotRoutes);
 app.use("/api/knowledge", knowledgeRoutes);
 app.use("/api/ai-analytics", aiAnalyticsRoutes);
+app.use("/api/ticket-options", ticketOptionsRoutes);
 
 app.get("/env.js", (req, res) => {
   const publicConfig = {
