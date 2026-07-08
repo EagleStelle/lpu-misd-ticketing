@@ -13,7 +13,7 @@ import { getApiBaseUrl } from "../utils/apiBaseUrl";
 import { FormModal } from "./Modal";
 import {
   FloatingInput,
-  FloatingSelect,
+  FloatingCombobox,
   PrimaryButton,
   SecondaryButton,
 } from "./FormFields";
@@ -48,6 +48,21 @@ const SidePanel = ({ collapsed, onToggleCollapse, onAccountMenuChange }) => {
   const [profileDept, setProfileDept] = useState(
     () => localStorage.getItem("userDepartment") || "",
   );
+  const [deptOptions, setDeptOptions] = useState([]);
+
+  // Load configurable department options
+  useEffect(() => {
+    const token = localStorage.getItem("authToken");
+    if (!token) return;
+    fetch(`${getApiBaseUrl()}/api/ticket-options`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((json) => {
+        if (json.success && json.data) setDeptOptions(json.data.departments || []);
+      })
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const token = localStorage.getItem("authToken");
@@ -326,25 +341,18 @@ const SidePanel = ({ collapsed, onToggleCollapse, onAccountMenuChange }) => {
                 onChange={(e) => setProfileName(e.target.value)}
                 autoComplete="name"
               />
-              <FloatingSelect
+              <FloatingCombobox
                 label="Type"
                 value={profileType}
                 onChange={(e) => setProfileType(e.target.value)}
                 options={["Student", "Faculty", "Admin"]}
                 required={false}
               />
-              <FloatingSelect
+              <FloatingCombobox
                 label="Department"
                 value={profileDept}
                 onChange={(e) => setProfileDept(e.target.value)}
-                options={[
-                  "CAS",
-                  "CBA",
-                  "CITHM",
-                  "COECS",
-                  "LPU-SC",
-                  "Highschool",
-                ]}
+                options={deptOptions}
                 required={false}
               />
               <div className="flex gap-3 pt-1">
