@@ -10,7 +10,7 @@ import {
   PrimaryButton,
   FilePicker,
   AttachmentPreview,
-  FloatingSelect,
+  FloatingCombobox,
   FloatingTextarea,
   FloatingInput,
   Alert,
@@ -143,6 +143,13 @@ function SubmitTicket() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Department/Category use a custom combobox (no native required) — guard here
+    if (!formData.department || !formData.category) {
+      setErrorMessage("Please select a department and category.");
+      return;
+    }
+
     showLoading();
     setErrorMessage(null);
     setSuccessMessage(null);
@@ -300,7 +307,7 @@ function SubmitTicket() {
             </div>
 
             <div className="flex flex-col gap-4 lg:grid lg:grid-cols-2">
-              <FloatingSelect
+              <FloatingCombobox
                 label="Type (Required)"
                 name="userType"
                 value={formData.userType}
@@ -308,7 +315,7 @@ function SubmitTicket() {
                 options={["Student", "Faculty", "Admin"]}
               />
 
-              <FloatingSelect
+              <FloatingCombobox
                 label="Department (Required)"
                 name="department"
                 value={formData.department}
@@ -316,7 +323,7 @@ function SubmitTicket() {
                 options={options.departments}
               />
 
-              <FloatingSelect
+              <FloatingCombobox
                 label="Category (Required)"
                 name="category"
                 value={formData.category}
@@ -324,7 +331,7 @@ function SubmitTicket() {
                 options={options.categories}
               />
 
-              <FloatingSelect
+              <FloatingCombobox
                 label="Site (Required)"
                 name="site"
                 value={formData.site}

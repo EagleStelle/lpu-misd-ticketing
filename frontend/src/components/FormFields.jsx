@@ -1,5 +1,13 @@
-import { forwardRef } from "react";
-import { ChevronDown, Paperclip, X } from "lucide-react";
+import {
+  forwardRef,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { createPortal } from "react-dom";
+import { ChevronDown, Paperclip, X, Search, Check } from "lucide-react";
 
 // PrimaryButton: Main action button, typically for form submission
 export const PrimaryButton = ({
@@ -173,6 +181,243 @@ export const FloatingSelect = ({
         size={18}
         className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-all duration-200 group-focus-within:rotate-180 peer-focus:text-lpu-gold"
       />
+    </div>
+  );
+};
+
+// FloatingCombobox: searchable single-select with floating label.
+// Same onChange contract as FloatingSelect — emits { target: { name, value } }.
+export const FloatingCombobox = ({
+  label,
+  name,
+  value,
+  onChange,
+  options,
+  required = true,
+}) => {
+  const normalizedOptions = useMemo(
+    () =>
+      (options || []).map((opt) =>
+        typeof opt === "string" ? { value: opt, label: opt } : opt,
+      ),
+    [options],
+  );
+
+  const [open, setOpen] = useState(false);
+  const [query, setQuery] = useState("");
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [coords, setCoords] = useState(null);
+  const triggerRef = useRef(null);
+  const panelRef = useRef(null);
+  const searchRef = useRef(null);
+  const listRef = useRef(null);
+
+  const selected = normalizedOptions.find((o) => o.value === value) || null;
+  const floated = open || value !== "";
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    if (!q) return normalizedOptions;
+    return normalizedOptions.filter((o) =>
+      o.label.toLowerCase().includes(q),
+    );
+  }, [normalizedOptions, query]);
+
+  // Position the portalled panel relative to the trigger, in viewport coords.
+  const computeCoords = useCallback(() => {
+    const el = triggerRef.current;
+    if (!el) return null;
+    const r = el.getBoundingClientRect();
+    const gap = 8;
+    const spaceBelow = window.innerHeight - r.bottom;
+    const spaceAbove = r.top;
+    const openUp = spaceBelow < 260 && spaceAbove > spaceBelow;
+    return {
+      left: r.left,
+      width: r.width,
+      top: openUp ? r.top - gap : r.bottom + gap,
+      openUp,
+      maxHeight: Math.max(160, (openUp ? spaceAbove : spaceBelow) - gap - 8),
+    };
+  }, []);
+
+  // Close on outside click (portal panel lives outside the trigger's DOM tree)
+  useEffect(() => {
+    if (!open) return undefined;
+    const onDocClick = (e) => {
+      if (
+        !triggerRef.current?.contains(e.target) &&
+        !panelRef.current?.contains(e.target)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onDocClick);
+    return () => document.removeEventListener("mousedown", onDocClick);
+  }, [open]);
+
+  // Reposition on scroll/resize while open
+  useEffect(() => {
+    if (!open) return undefined;
+    const update = () => setCoords(computeCoords());
+    window.addEventListener("scroll", update, true);
+    window.addEventListener("resize", update);
+    return () => {
+      window.removeEventListener("scroll", update, true);
+      window.removeEventListener("resize", update);
+    };
+  }, [open, computeCoords]);
+
+  // On open: focus the search box (state resets happen in openMenu)
+  useEffect(() => {
+    if (!open) return undefined;
+    const t = setTimeout(() => searchRef.current?.focus(), 0);
+    return () => clearTimeout(t);
+  }, [open]);
+
+  // Keep highlight in view
+  useEffect(() => {
+    if (!open || activeIndex < 0) return;
+    const node = listRef.current?.children[activeIndex];
+    node?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex, open]);
+
+  const openMenu = () => {
+    setQuery("");
+    setActiveIndex(normalizedOptions.findIndex((o) => o.value === value));
+    setCoords(computeCoords());
+    setOpen(true);
+  };
+
+  const commit = (opt) => {
+    onChange?.({ target: { name, value: opt.value } });
+    setOpen(false);
+  };
+
+  const onKeyDown = (e) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      if (!open) return openMenu();
+      setActiveIndex((i) => Math.min(filtered.length - 1, i + 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(0, i - 1));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (open && filtered[activeIndex]) commit(filtered[activeIndex]);
+    } else if (e.key === "Escape") {
+      setOpen(false);
+    }
+  };
+
+  const boxClass = `w-full box-border rounded-xl border text-[0.95rem] bg-white dark:bg-zinc-900 dark:text-zinc-100 outline-none transition-all duration-200 py-[12px] pl-[14px] pr-[36px] text-left cursor-pointer ${
+    open
+      ? "border-lpu-gold ring-2 ring-lpu-gold"
+      : "border-gray-200 dark:border-zinc-700"
+  }`;
+
+  const labelClass = `absolute left-[14px] bg-white dark:bg-zinc-900 px-1 pointer-events-none transition-all duration-200 ${
+    floated
+      ? "-top-2 text-[0.75rem] font-bold text-gray-500 dark:text-zinc-400"
+      : "top-[12px] text-[0.9rem] text-gray-500 dark:text-zinc-400"
+  } ${open ? "!text-lpu-gold" : ""}`;
+
+  const panel = open && coords && (
+    <div
+      ref={panelRef}
+      style={{
+        position: "fixed",
+        left: coords.left,
+        width: coords.width,
+        top: coords.top,
+        transform: coords.openUp ? "translateY(-100%)" : undefined,
+        zIndex: 1300,
+      }}
+      className="bg-white dark:bg-zinc-900 rounded-xl border border-gray-200 dark:border-zinc-700 shadow-xl overflow-hidden flex flex-col animate-in fade-in zoom-in-95"
+    >
+      <div className="flex items-center gap-2 px-3 h-10 border-b border-gray-100 dark:border-zinc-800 shrink-0">
+        <Search size={15} className="text-gray-400 shrink-0" />
+        <input
+          ref={searchRef}
+          value={query}
+          onChange={(e) => {
+            setQuery(e.target.value);
+            setActiveIndex(0);
+          }}
+          onKeyDown={onKeyDown}
+          placeholder="Search..."
+          className="flex-1 min-w-0 h-full bg-transparent text-sm outline-none text-gray-800 dark:text-zinc-100 placeholder:text-gray-400 dark:placeholder:text-zinc-500"
+        />
+      </div>
+      <ul
+        ref={listRef}
+        role="listbox"
+        style={{ maxHeight: coords.maxHeight - 40 }}
+        className="overflow-y-auto py-1"
+      >
+        {filtered.length === 0 ? (
+          <li className="px-3 py-2 text-sm text-gray-400 dark:text-zinc-500 text-center">
+            No matches
+          </li>
+        ) : (
+          filtered.map((opt, i) => {
+            const isSelected = opt.value === value;
+            const isActive = i === activeIndex;
+            return (
+              <li key={opt.value} role="option" aria-selected={isSelected}>
+                <button
+                  type="button"
+                  onMouseEnter={() => setActiveIndex(i)}
+                  onClick={() => commit(opt)}
+                  className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-sm text-left cursor-pointer transition-colors ${
+                    isActive
+                      ? "bg-lpu-maroon text-white"
+                      : "text-gray-800 dark:text-zinc-100 hover:bg-gray-50 dark:hover:bg-zinc-800"
+                  }`}
+                >
+                  <span className="truncate">{opt.label}</span>
+                  {isSelected && (
+                    <Check
+                      size={15}
+                      className={`shrink-0 ${isActive ? "text-white" : "text-lpu-maroon dark:text-lpu-gold"}`}
+                    />
+                  )}
+                </button>
+              </li>
+            );
+          })
+        )}
+      </ul>
+    </div>
+  );
+
+  return (
+    <div className="relative flex flex-col w-full">
+      <button
+        ref={triggerRef}
+        type="button"
+        name={name}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-required={required}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        onKeyDown={onKeyDown}
+        className={boxClass}
+      >
+        {selected ? (
+          selected.label
+        ) : (
+          <span className="text-transparent select-none">.</span>
+        )}
+      </button>
+      <label className={labelClass}>{label}</label>
+      <ChevronDown
+        size={18}
+        className={`absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none transition-all duration-200 ${
+          open ? "rotate-180 text-lpu-gold" : ""
+        }`}
+      />
+      {panel && createPortal(panel, document.body)}
     </div>
   );
 };
